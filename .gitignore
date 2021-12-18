@@ -127,3 +127,17 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Datasets
+datasets/
+
+# Pycharm files
+*/__pycache__/*
+.idea
+*.pyc
+
+# gitignore
+.gitignore
+
+# virtual environment
+FunsiteEnv/

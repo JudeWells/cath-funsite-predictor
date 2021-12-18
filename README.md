@@ -23,6 +23,7 @@ source FunsiteEnv/bin/activate
 # install dependencies
 pip install -r scripts/FunsiteEnv_requirements.txt
 ```
+Note that in order to install XGBoost on Mac may require the installation of Xcode (developer tools) and Xcode Command Line Tools.
 
 ### Getting CATH FunFam assignments for proteins
 
