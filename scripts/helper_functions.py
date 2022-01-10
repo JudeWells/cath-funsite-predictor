@@ -28,7 +28,10 @@ from sklearn.model_selection import GroupKFold
 from sklearn.model_selection import GroupShuffleSplit
 from sklearn.model_selection import GridSearchCV
 from sklearn.feature_selection import SelectFromModel
-from sklearn.externals import joblib
+try:
+    from sklearn.externals import joblib
+except ImportError:
+    import joblib
 
 from sklearn import svm
 from sklearn.neural_network import MLPClassifier
