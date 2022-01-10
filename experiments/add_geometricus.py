@@ -68,6 +68,7 @@ def match_invariants(ppi_df, atom_groups, invariants):
     """
     Matches the geometricus invariants for each residue in the dataframe
     """
+    dud_row = np.array([-1,-1,-1,-1])
     kmer_rows = []
     radius_rows = []
     atom_group_dict = make_atomgroup_dict(atom_groups)
@@ -83,14 +84,18 @@ def match_invariants(ppi_df, atom_groups, invariants):
             resname = domain_dict[res_idx]['resname']
             if resname != row.res_label:
                 print(f'mismatch on residue {res_num} in {domain}, {resname}, {row.res_label}')
-                break
+                kmer_rows.append(dud_row)
+                radius_rows.append(dud_row)
+                continue
             else:
                 print(f'success on {domain}')
                 kmer_rows.append(kmer_inv)
                 radius_rows.append(radius_inv)
         except:
+            kmer_rows.append(dud_row)
+            radius_rows.append(dud_row)
             print(f'Residue {res_idx} in {domain}')
-            break
+            continue
         if i % 200 == 0:
             pd.DataFrame(kmer_rows, columns=['k1', 'k2', 'k3', 'k4']).to_csv('kmers.csv', index=False)
             pd.DataFrame(radius_rows, columns=['r1', 'r2', 'r3', 'r4']).to_csv('radii.csv', index=False)
