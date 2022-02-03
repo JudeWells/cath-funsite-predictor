@@ -148,5 +148,7 @@ PPI_Funsite_model_JW_version.sav
 # exploratory scripts and experiments
 #experiments/
 
+
 # other stuff (delete these later)
 *.csv
+*.gz

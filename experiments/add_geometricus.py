@@ -32,7 +32,7 @@ def refactor_invariants(invariants_kmer, invariants_radius):
     for i in range(len(invariants_kmer)):
         kmer = invariants_kmer[i]
         radius = invariants_radius[i]
-        pdb_ref = invariants_kmer[i].name
+        pdb_ref = invariants_kmer[i].name.lower()
         new_dict = {}
         for j in range(len(kmer.sequence)):
             new_dict[j] = {
@@ -60,7 +60,7 @@ def generate_invariants(ppi_df):
     return atom_groups, invariants_kmer, invariants_radius
 
 def make_atomgroup_dict(atom_groups):
-    atom_group_names = [ag.__str__().split(' ')[1] for ag in atom_groups]
+    atom_group_names = [ag.__str__().split(' ')[1].lower() for ag in atom_groups]
     atom_group_dict = dict(zip(atom_group_names, atom_groups))
     return atom_group_dict
 
@@ -68,38 +68,45 @@ def match_invariants(ppi_df, atom_groups, invariants):
     """
     Matches the geometricus invariants for each residue in the dataframe
     """
+    dud_row = np.array([-1,-1,-1,-1])
     kmer_rows = []
     radius_rows = []
     atom_group_dict = make_atomgroup_dict(atom_groups)
     for i, row in ppi_df.iterrows():
-        domain = row.domain
-        res_num = row.domain_residue
-        domain_dict = invariants[domain]
-        atom_group = atom_group_dict[domain[:5]]
-        res_idx = align_residue_index(atom_group, res_num)
         try:
+            domain = row.domain.lower()
+            res_num = row.domain_residue
+            domain_dict = invariants[domain]
+            atom_group = atom_group_dict[domain[:5]]
+            res_idx = align_residue_index(atom_group, res_num)
+
             kmer_inv = domain_dict[res_idx]['kmer']
             radius_inv = domain_dict[res_idx]['radius']
             resname = domain_dict[res_idx]['resname']
             if resname != row.res_label:
                 print(f'mismatch on residue {res_num} in {domain}, {resname}, {row.res_label}')
-                break
+                kmer_rows.append(dud_row)
+                radius_rows.append(dud_row)
+                continue
             else:
                 print(f'success on {domain}')
                 kmer_rows.append(kmer_inv)
                 radius_rows.append(radius_inv)
-        except:
-            print(f'Residue {res_idx} in {domain}')
-            break
-        if i % 200 == 0:
-            pd.DataFrame(kmer_rows, columns=['k1', 'k2', 'k3', 'k4']).to_csv('kmers.csv', index=False)
-            pd.DataFrame(radius_rows, columns=['r1', 'r2', 'r3', 'r4']).to_csv('radii.csv', index=False)
-    pd.DataFrame(kmer_rows, columns=['k1', 'k2', 'k3', 'k4']).to_csv('kmers.csv', index=False)
-    pd.DataFrame(radius_rows, columns=['r1', 'r2', 'r3', 'r4']).to_csv('radii.csv', index=False)
+        except Exception as e:
+            kmer_rows.append(dud_row)
+            radius_rows.append(dud_row)
+            print(f'EXCEPTION {type(e)}: {e}')
+            breakpoint_var = True
+            continue
+        if i % 1000 == 0:
+            pd.DataFrame(kmer_rows, columns=['k1', 'k2', 'k3', 'k4']).to_csv('training_kmers.csv', index=False)
+            pd.DataFrame(radius_rows, columns=['r1', 'r2', 'r3', 'r4']).to_csv('training_radii.csv', index=False)
+    pd.DataFrame(kmer_rows, columns=['k1', 'k2', 'k3', 'k4']).to_csv('training_kmers.csv', index=False)
+    pd.DataFrame(radius_rows, columns=['r1', 'r2', 'r3', 'r4']).to_csv('training_radii.csv', index=False)
 
 if __name__ == '__main__':
     basedir = '../datasets/PPI/'
-    df = pd.read_csv(basedir + 'PPI_validation_dataset.csv')
+    df = pd.read_csv(basedir + 'PPI_training_dataset.csv')
     df = add_residue_col(df)
     atom_groups, invariants_kmer, invariants_radius = generate_invariants(df)
     invariants = refactor_invariants(invariants_kmer, invariants_radius)
