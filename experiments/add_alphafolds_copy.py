@@ -11,7 +11,7 @@ def load_rep(dom_id):
     representation for this domain as a numpy.ndarray
     """
     upper_dom_id = dom_id.upper()
-    directory = 'representation_pickles/'
+    directory = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/alpha_pickles/representation_pickles/'
     try:
         with open(directory + upper_dom_id + '.pickle', 'rb') as handle:
             representation = pickle.load(handle)
@@ -47,13 +47,20 @@ def get_all_atom_groups(df, output_dir='pdbs', pickle_grps=True):
     return atom_groups
 
 def make_alignment(domain_id):
+    """
+    Think about what must be true for this to work:
+    we have a list of numbers representing the residue number for each atom in the protein
+    Do the residue numbers have gaps in them if the residue is missing from the structure?
+    """
     atom_group = atom_groups[domain_id]
+    resnum = atom_group.getData('resnum') # returns a list of numbers that correspond to the indexing used to label the PPI dataset
     alignment = {}
     return alignment
 
 if __name__=="__main__":
     df = pd.read_csv('../datasets/PPI/PPI_training_dataset.csv')
-    atom_groups = get_all_atom_groups(df)
+    atom_groups = get_all_atom_groups(df.iloc[:50,])
+    breakpoint_var = True
 
 
 
