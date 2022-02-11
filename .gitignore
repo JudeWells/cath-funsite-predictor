@@ -153,3 +153,4 @@ PPI_Funsite_model_JW_version.sav
 *.csv
 *.gz
 alpha_pickles/
+experiments/pdbs/
