@@ -145,11 +145,45 @@ def get_missing_from_lines(lines, chain):
                 missing_dict[resnum] = resname
     return missing_dict
 
-def column_identifier(lines):
+def test_consistency(res_col, idx_col):
+    """
+    This function determins if the idx_col is consistent with being a list of indexes for each residue
+    """
+    tuple_list = list(zip(idx_col, res_col))
+    idx_set = set(idx_col)
+    if len(idx_set) < 9:
+        return False
+    for idx in idx_set:
+        if len(set([t[1] for t in tuple_list if t[0]==idx]))>1:
+            return False
+    return True
+
+def column_identifier(lines, chain):
     '''
     This function determines the index of the column that contains the residue indexes
     as this varies between PDB files
     '''
+    atoms = [l for l in lines if 'ATOM ' in l and l.split()[4]==chain]
+    num_2_res = {}
+    columns_per_line = set([len(atom_line.split()) for atom_line in atoms])
+    assert len(columns_per_line) == 1
+    columns_per_line = columns_per_line.pop()
+    possible_idx_cols = []
+    for i in range(columns_per_line):
+        col_vals = [atom_line.split()[i] for atom_line in atoms]
+        if len(set(col_vals).intersection(set(valid_residues))) > 3:
+            residue_column = i
+        if all([val.strip('-').isnumeric() for val in atom_line.split()[i] for atom_line in atoms]):
+            if all(['.' not in val for val in atom_line.split()[i] for atom_line in atoms]):
+                possible_idx_cols.append(i)
+    for candidate_col in possible_idx_cols:
+        res_col = [atom_line.split()[residue_column] for atom_line in atoms]
+        idx_col = [atom_line.split()[candidate_col] for atom_line in atoms]
+        if test_consistency(res_col, idx_col):
+            return dict(zip(idx_col, res_col))
+
+
+
 
 def get_res_index_from_lines2(lines, chain):
     start_cycle = False
