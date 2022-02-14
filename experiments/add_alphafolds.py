@@ -42,8 +42,8 @@ def get_all_atom_groups(df, output_dir='pdbs', pickle_grps=True):
         atom_grp = prody.parsePDB(pdb_id, chain=chain)
         atom_groups[dom_str] = atom_grp
 
-    with open('atom_groups.pickle', 'wb') as handle:
-        pickle.dump(atom_groups, handle)
+    # with open('atom_groups.pickle', 'wb') as handle:
+    #     pickle.dump(atom_groups, handle)
     return atom_groups
 
 def make_alignment(domain_id):
