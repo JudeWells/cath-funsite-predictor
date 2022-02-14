@@ -6,11 +6,15 @@ import pickle
 import os
 import prody
 from prody.atomic.atomic import Atomic
+from experiments.add_geometricus import add_residue_col
 
 valid_residues = ['LEU', 'GLU', 'ARG', 'VAL', 'LYS', 'ILE', 'ASP', 'PHE', 'ALA', 'TYR', 'THR', 'SER', 'GLN', 'PRO',
                   'ASN', 'GLY', 'HIS', 'MET', 'TRP', 'CYS']
 
 valid_res_letters = 'GAVCPLIMWFKRHSTYNQDE'
+
+name2letter = dict(zip(valid_residues, 'LERVKIDFAYTSQPNGHMWC'))
+letter2name = {v:k for k,v in name2letter.items()}
 
 def load_atom_groups_from_pickle():
     dir = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/experiments/pdbs/'
@@ -141,7 +145,7 @@ def get_missing_from_lines(lines, chain):
         if len(splitline) > 3:
             resname = splitline[2]
             if resname in valid_residues and splitline[3] == chain:
-                resnum = int(splitline[4])
+                resnum = splitline[4]
                 missing_dict[resnum] = resname
     return missing_dict
 
@@ -151,6 +155,8 @@ def test_consistency(res_col, idx_col):
     """
     tuple_list = list(zip(idx_col, res_col))
     idx_set = set(idx_col)
+    if len(idx_set) > len(idx_col) * 0.5: # the true idx set should be significantly shorter than the entire index col because many repeated idx (res) across atoms
+        return False
     if len(idx_set) < 9:
         return False
     for idx in idx_set:
@@ -158,77 +164,53 @@ def test_consistency(res_col, idx_col):
             return False
     return True
 
+def test_all_int(idx_col):
+    """
+    Checks if entire column in ATOM lines is integers (consistent with being residue indexes)
+    """
+    if all(['.' not in v for v in idx_col]): # no decimals
+        if all([v.strip('-').isnumeric() for v in idx_col]):
+            return True
+        elif all([v[1:].strip('-').isnumeric() for v in idx_col]): # captures indexes such as A1631
+            return True
+        elif all([v[:-1].strip('-').isnumeric() for v in idx_col]): # captures indexes such as 459A
+            return True
+        else:
+            return False
+    else:
+        return False
+
+def clean_atom_lines(atoms, columns_per_line):
+    return atoms
+
+
 def column_identifier(lines, chain):
     '''
     This function determines the index of the column that contains the residue indexes
     as this varies between PDB files
     '''
-    atoms = [l for l in lines if 'ATOM ' in l and l.split()[4]==chain]
-    num_2_res = {}
+    atoms = [l for l in lines if 'ATOM ' in l and l.split()[4]==chain and 'REMARK' not in l]
+
+    if len(atoms) <1:
+        atoms = [l for l in lines if 'ATOM ' in l and 'REMARK' not in l]
+        breakpoint_var = True
     columns_per_line = set([len(atom_line.split()) for atom_line in atoms])
-    assert len(columns_per_line) == 1
-    columns_per_line = columns_per_line.pop()
+    if max(columns_per_line) - min(columns_per_line)>1:
+        breakpoint_var = True
+    columns_per_line = min(columns_per_line)
     possible_idx_cols = []
     for i in range(columns_per_line):
         col_vals = [atom_line.split()[i] for atom_line in atoms]
         if len(set(col_vals).intersection(set(valid_residues))) > 3:
             residue_column = i
-        if all([val.strip('-').isnumeric() for val in atom_line.split()[i] for atom_line in atoms]):
-            if all(['.' not in val for val in atom_line.split()[i] for atom_line in atoms]):
-                possible_idx_cols.append(i)
+        if test_all_int(col_vals):
+            possible_idx_cols.append(i)
     for candidate_col in possible_idx_cols:
         res_col = [atom_line.split()[residue_column] for atom_line in atoms]
         idx_col = [atom_line.split()[candidate_col] for atom_line in atoms]
         if test_consistency(res_col, idx_col):
             return dict(zip(idx_col, res_col))
 
-
-
-
-def get_res_index_from_lines2(lines, chain):
-    start_cycle = False
-    start_idx = 0
-    end_idx = 0
-    for i, l in enumerate(lines):
-        words = l.split()
-        if 'SSSEQI' in l and 'COMPONENT' in l and 'CODE' in l:
-            start_idx = i+1
-            end_idx = i+1
-            start_cycle = True
-            first_row = True
-        if start_cycle:
-            if first_row:
-                first_row = False
-                continue
-            if len(words) > 6 and words[2].isnumeric() and (words[4].isnumeric() or words[4][0]=='-') and words[6].isnumeric() and words[7].isnumeric():
-                end_idx +=1
-            else:
-                break
-    relevant_lines = lines[start_idx:end_idx]
-    lines_match_chain = [l for l in relevant_lines if l.split()[3]==chain]
-    if len(lines_match_chain)>0:
-        lines_match_chain[0].split()
-    else:
-        breakpoint_var = True
-
-
-
-def get_res_index_from_lines(lines, chain):
-    """
-    This function does not work because some pdb files label every atom with a different number
-    even if they are part of the same residue
-    """
-    atoms = [l for l in lines if 'ATOM ' in l and l.split()[4]==chain]
-    num_2_res = {}
-    for line in atoms:
-        l_split = line.split()
-        number = l_split[1]
-        resname = l_split[3]
-        if number in num_2_res:
-            assert num_2_res[number] == resname
-        else:
-            num_2_res[number] = resname
-    return num_2_res
 
 
 def get_chain_letter(domain_id):
@@ -278,6 +260,42 @@ def add_sequence_to_alpha_rep(alpha_rep, domain_id, chain, seq_df):
     xs = sequence.count('X')
     return alpha_rep
 
+def combine_missing_atom(missing, num2res):
+    if missing is None:
+        return num2res
+    try:
+        num2res_int = {int(k): v for k,v in num2res.items()}
+        if missing is None:
+            return num2res
+        missing_int = {int(k): v for k, v in missing.items()}
+        num2res_int.update(missing_int)
+        return num2res_int
+    except:
+        num2res.update(missing)
+        return num2res
+
+def check_residue_name(one_chain, num2res):
+    for i, row in one_chain.iterrows():
+        resnum = row.domain_residue
+        resname = row.res_label
+
+        if resnum not in num2res:
+            resnum = str(resnum)
+            if resnum not in num2res:
+                breakpoint_var = True
+        else:
+            if num2res[resnum] != letter2name[resname]:
+                breakpoint_var = True
+
+def validate_sequence(num2res, missing, seq_pdb, seq_alpha, one_chain):
+    combined = combine_missing_atom(missing, num2res)
+    assert len(combined) == len(missing) + len(num2res)
+    if seq_pdb is not None and len(seq_pdb) != len(combined):
+        breakpoint_var = True
+    if len(seq_alpha) != len(combined):
+        breakpoint_var = True
+    check_residue_name(one_chain, combined)
+
 
 
 if __name__=="__main__":
@@ -287,6 +305,7 @@ if __name__=="__main__":
     seq_df = pd.read_csv('/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/experiments/PPI_training_dataset_with_sequences.csv')
     dir = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/alpha_pickles/representation_pickles'
     df = pd.read_csv('../datasets/PPI/PPI_training_dataset.csv')
+    df = add_residue_col(df)
     # atom_groups = get_all_atom_groups(df.iloc[:50,])
     atom_groups = load_atom_groups_from_pickle()
     mismatch_counter = 0
@@ -295,10 +314,22 @@ if __name__=="__main__":
         chain = get_chain_letter(domain_id)
         lines = load_pdb_lines(domain_id)
         missing = get_missing_from_lines(lines, chain)
-        num_2_res = get_res_index_from_lines2(lines, chain)
+        try:
+            num2res = column_identifier(lines, chain)
+        except:
+            breakpoint_var = True
+            num2res = column_identifier(lines, chain)
+        if num2res is None:
+            breakpoint_var = True
+            num2res = column_identifier(lines, chain)
+            continue
+        seq = get_sequence_from_lines(lines, chain)
+        one_chain = df[df.domain.str.contains(domain_id.lower()+chain)]
+        seq_alpha = seq_df[(seq_df.PDBID==domain_id.lower())&(seq_df.CHAIN==chain)].sequence.min()
+        validate_sequence(num2res, missing, seq, seq_alpha, one_chain)
         if i % 10==0:
             print(i)
-    #     seq = get_sequence_from_lines(lines, chain)
+
     #     alpha_rep = load_rep(domain_id + chain)
     #     if alpha_rep is not None:
     #         one_row = count_all_residues(alpha_rep, domain_id, chain, seq_df)
@@ -319,6 +350,3 @@ if __name__=="__main__":
     # count_res_df.to_csv('count_residues.csv')
     # check_true_length()
     # breakpoint_var = True
-
-
-
