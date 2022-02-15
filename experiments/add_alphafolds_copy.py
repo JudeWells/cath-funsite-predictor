@@ -8,6 +8,7 @@ import prody
 from prody.atomic.atomic import Atomic
 from experiments.add_geometricus import add_residue_col
 
+
 valid_residues = ['LEU', 'GLU', 'ARG', 'VAL', 'LYS', 'ILE', 'ASP', 'PHE', 'ALA', 'TYR', 'THR', 'SER', 'GLN', 'PRO',
                   'ASN', 'GLY', 'HIS', 'MET', 'TRP', 'CYS']
 
@@ -27,7 +28,7 @@ def load_rep(dom_id):
     This function takes a domain id and returns the corresponding alphafold
     representation for this domain as a numpy.ndarray
     """
-    upper_dom_id = dom_id.upper()
+    upper_dom_id = dom_id.upper()[:5]
     directory = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/alpha_pickles/representation_pickles/'
     try:
         with open(directory + upper_dom_id + '.pickle', 'rb') as handle:
@@ -98,6 +99,7 @@ def gzip_open(filename, *args, **kwargs):
 
 
 def load_pdb_lines(pdb_code):
+    pdb_code = pdb_code[:4].lower()
     dir = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/experiments/pdbs/'
     filepath = dir + pdb_code.lower() + '.pdb.gz'
     with gzip_open(filepath) as handle:
@@ -180,8 +182,6 @@ def test_all_int(idx_col):
     else:
         return False
 
-def clean_atom_lines(atoms, columns_per_line):
-    return atoms
 
 
 def column_identifier(lines, chain):
@@ -296,9 +296,22 @@ def validate_sequence(num2res, missing, seq_pdb, seq_alpha, one_chain):
         breakpoint_var = True
     check_residue_name(one_chain, combined)
 
+def make_combined_dict(pdbid, chain):
+    """
+    aggregator of other functions to create a dictionary of resides from pdb file
+    the residue dictionary is a combination of the ATOM lines and also missing residues
+    """
+    lines = load_pdb_lines(pdbid)
+    missing = get_missing_from_lines(lines, chain)
+    num2res = column_identifier(lines, chain)
+    combined = combine_missing_atom(missing, num2res)
+    return combined
 
 
-if __name__=="__main__":
+def alignment_tester():
+    """
+    This function was previously run in main
+    """
     count_rows = []
     success = 0
     mismatch = 0
@@ -350,3 +363,96 @@ if __name__=="__main__":
     # count_res_df.to_csv('count_residues.csv')
     # check_true_length()
     # breakpoint_var = True
+
+def add_alphafold_rep(df, match_status, combined, domain):
+    res_idx_list = np.array(sorted(combined.keys()))
+    one_domain = df[df.domain == domain]
+    alpha_rep = load_rep(domain)
+    if alpha_rep is None:
+        print(f'missing representation {domain}')
+        return
+    if alpha_rep['single'].shape[0] != len(match_status['alpha_seq']):
+        print(f'alpha rep does not match sequence {domain}')
+        return
+
+    for i, row in one_domain.iterrows():
+        pdb_num = row.domain_residue
+        pdb_resname = name2letter[combined[pdb_num]]
+        pdb_position = np.where(res_idx_list == pdb_num)[0][0]
+        adjusted_pdb_position = pdb_position + match_status['start_index']
+        if not pdb_resname == match_status['pdb_seq'][pdb_position] == match_status['alpha_seq'][adjusted_pdb_position] == row.res_label:
+            print('failed to match amino acid type')
+            return
+        df.loc[i, 'alpha_rep'] = str(alpha_rep['single'][adjusted_pdb_position])
+    return df
+
+
+
+def iterate_and_add(df, seq_df):
+    """
+    Strategy for matching
+    """
+    results_list = []
+    for i, domain in enumerate(df.domain.unique()):
+        try:
+            chain = domain[4]
+            seq_alpha = seq_df[(seq_df.PDBID == domain[:4].lower()) & (seq_df.CHAIN == chain)].sequence.min()
+            combined = make_combined_dict(domain, chain)
+            match_status = get_start_index_and_check_match(seq_alpha, combined)
+            match_status['domain'] = domain
+            if match_status['perfect_match']:
+                add_alphafold_rep(df, match_status, combined, domain)
+
+
+
+        except Exception as E:
+            print(f'Error {domain}')
+            match_status = {
+                'domain': domain,
+                'exception': E,
+            }
+        results_list.append(match_status)
+        if i % 2 == 0:
+            df.to_csv('with_alphafold.csv', index=False)
+    breakpoint_var = True
+    results = pd.DataFrame(results_list)
+    # results.to_csv('allignment_success_on_pdb_dict.csv', index=False)
+
+
+
+
+def get_start_index_and_check_match(alpha_seq, combined):
+    """This function makes an adjustment at the beginning and the end of the sequence
+    counts discontinuities in the middle"""
+    pdb_seq = ''.join([name2letter[v] for k,v in sorted(combined.items())])
+    idx = 0
+    for i in range(20, 1, -1):
+        pdb_string  = pdb_seq[:i]
+        matches = [(m.start(0), m.end(0)) for m in re.finditer(pdb_string, alpha_seq)]
+        if len(matches) > 1:
+            breakpoint_var = True
+        elif len(matches) == 1:
+            break
+    start_index = matches[0][0]
+    if pdb_seq in alpha_seq:
+        perfect_match = 1
+    else:
+        perfect_match = 0
+    one_row = {
+        'perfect_match': perfect_match,
+        'start_index': start_index,
+        'alpha_seq': alpha_seq,
+        'pdb_seq': pdb_seq,
+    }
+    return one_row
+
+
+
+
+if __name__=="__main__":
+    seq_df = pd.read_csv('/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/experiments/PPI_training_dataset_with_sequences.csv')
+    dir = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/alpha_pickles/representation_pickles'
+    df = pd.read_csv('../datasets/PPI/PPI_training_dataset.csv')
+    df = add_residue_col(df)
+    iterate_and_add(df, seq_df)
+
