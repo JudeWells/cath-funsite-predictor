@@ -296,6 +296,16 @@ def validate_sequence(num2res, missing, seq_pdb, seq_alpha, one_chain):
         breakpoint_var = True
     check_residue_name(one_chain, combined)
 
+def atom_identifier(lines, chain):
+    lines = [l.strip('b\'') for l in lines]
+    lines = [l for l in lines if l[0:4] == 'ATOM']
+    lines = [l for l in lines if l[21]==chain]
+    res_seq = [l[22:26].strip() for l in lines]
+    res_name = [l[17:20].strip() for l in lines]
+    if test_consistency(res_name, res_seq):
+        return dict(zip(res_seq, res_name))
+    pass
+
 def make_combined_dict(pdbid, chain):
     """
     aggregator of other functions to create a dictionary of resides from pdb file
@@ -303,7 +313,9 @@ def make_combined_dict(pdbid, chain):
     """
     lines = load_pdb_lines(pdbid)
     missing = get_missing_from_lines(lines, chain)
-    num2res = column_identifier(lines, chain)
+    num2res = column_identifier(lines, chain) # uses whitespace probably bad
+    if num2res is None:
+        num2res = atom_identifier(lines, chain)
     combined = combine_missing_atom(missing, num2res)
     return combined
 
@@ -365,7 +377,7 @@ def alignment_tester():
     # breakpoint_var = True
 
 def add_alphafold_rep(df, match_status, combined, domain):
-    res_idx_list = np.array(sorted(combined.keys()))
+
     one_domain = df[df.domain == domain]
     alpha_rep = load_rep(domain)
     if alpha_rep is None:
@@ -377,6 +389,13 @@ def add_alphafold_rep(df, match_status, combined, domain):
 
     for i, row in one_domain.iterrows():
         pdb_num = row.domain_residue
+
+        if isinstance(pdb_num, int) and isinstance(min(combined.keys()), str):
+            pdb_num = str(pdb_num)
+
+        if pdb_num not in combined:
+            combined = {re.sub('[A-z]', '', k):v for k,v in combined.items()}
+        res_idx_list = np.array(sorted(combined.keys()))
         pdb_resname = name2letter[combined[pdb_num]]
         pdb_position = np.where(res_idx_list == pdb_num)[0][0]
         adjusted_pdb_position = pdb_position + match_status['start_index']
@@ -386,19 +405,53 @@ def add_alphafold_rep(df, match_status, combined, domain):
         df.loc[i, 'alpha_rep'] = str(alpha_rep['single'][adjusted_pdb_position])
     return df
 
+def find_completed_domains(path2df=None, adf=None):
+    """this function reads the csv file and returns a list of all the domains
+    where the alphafold rep has already been written into the file
+    """
+    if adf is None:
+        adf = pd.read_csv(path2df)
+    completed_domains = []
+    for domain in adf.domain.unique():
+        one_domain = adf[adf.domain == domain]
+        if any(one_domain.alpha_rep.notnull()):
+            completed_domains.append(domain)
+    return completed_domains
 
+def process_chain_in_index(combined, chain):
+    return {k:v for k,v in combined.items() if chain in k.upper()}
+
+def trim_pdb_residues(combined, domain, chain, one_domain):
+    first_residue = one_domain.domain_residue.min()
+    last_residue = one_domain.domain_residue.max()
+    return {k:v for k,v in combined.items() if k>= first_residue and k<=last_residue}
 
 def iterate_and_add(df, seq_df):
     """
     Strategy for matching
     """
+    completion_log_path = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/experiments/completed_domains.txt'
+    with open(completion_log_path) as f:
+        completed = f.readlines()
+    completed = [d.strip() for d in completed]
+    has_alphafold_already = find_completed_domains(adf=df)
     results_list = []
     for i, domain in enumerate(df.domain.unique()):
+        if domain in has_alphafold_already:
+            continue
         try:
             chain = domain[4]
             seq_alpha = seq_df[(seq_df.PDBID == domain[:4].lower()) & (seq_df.CHAIN == chain)].sequence.min()
             combined = make_combined_dict(domain, chain)
+            if combined is None:
+                combined = make_combined_dict(domain, chain)
+            if any(chain in str(k) for k in combined.keys()):
+                combined = process_chain_in_index(combined, chain)
             match_status = get_start_index_and_check_match(seq_alpha, combined)
+            if not match_status['perfect_match']:
+                one_domain = df[df.domain==domain]
+                combined = trim_pdb_residues(combined, domain, chain, one_domain)
+                match_status = get_start_index_and_check_match(seq_alpha, combined)
             match_status['domain'] = domain
             if match_status['perfect_match']:
                 add_alphafold_rep(df, match_status, combined, domain)
@@ -412,8 +465,12 @@ def iterate_and_add(df, seq_df):
                 'exception': E,
             }
         results_list.append(match_status)
-        if i % 2 == 0:
+        if i % 20 == 0:
             df.to_csv('with_alphafold.csv', index=False)
+        with open(completion_log_path, 'a+') as f:
+            f.write("\n")
+            f.write(domain)
+    df.to_csv('with_alphafold.csv', index=False)
     breakpoint_var = True
     results = pd.DataFrame(results_list)
     # results.to_csv('allignment_success_on_pdb_dict.csv', index=False)
@@ -421,7 +478,7 @@ def iterate_and_add(df, seq_df):
 
 
 
-def get_start_index_and_check_match(alpha_seq, combined):
+def get_start_index_and_check_match(alpha_seq, combined, domain=None, chain=None):
     """This function makes an adjustment at the beginning and the end of the sequence
     counts discontinuities in the middle"""
     pdb_seq = ''.join([name2letter[v] for k,v in sorted(combined.items())])
@@ -452,7 +509,7 @@ def get_start_index_and_check_match(alpha_seq, combined):
 if __name__=="__main__":
     seq_df = pd.read_csv('/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/experiments/PPI_training_dataset_with_sequences.csv')
     dir = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/alpha_pickles/representation_pickles'
-    df = pd.read_csv('../datasets/PPI/PPI_training_dataset.csv')
+    df = pd.read_csv('/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/experiments/with_alphafold.csv')
     df = add_residue_col(df)
     iterate_and_add(df, seq_df)
 

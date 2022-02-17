@@ -3,7 +3,9 @@ from experiments.add_geometricus import add_residue_col
 import xgboost as xgb
 import numpy as np
 import re
-from sklearn.metrics import accuracy_score, roc_auc_score
+from sklearn.metrics import accuracy_score, roc_auc_score, precision_recall_curve, auc
+
+
 
 def domain_train_test_split(df):
     train_prop = 0.7
@@ -17,9 +19,10 @@ def drop_other_columns(df):
 
 def prepare_df(path_to_df = None, target='res_label'):
     if path_to_df is None:
-        path_to_df = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/experiments/with_alphafold_copy.csv'
+        path_to_df = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/experiments/with_alphafold.csv'
     df = pd.read_csv(path_to_df)
     df = add_residue_col(df)
+    print(f'proportion of rows with alpha_rep {df.alpha_rep.notnull().mean()}')
     df.dropna(inplace=True, subset=['alpha_rep', target])
     train, test = domain_train_test_split(df)
     return train, test
@@ -40,9 +43,12 @@ def fit_and_evaluate(train, test, target='res_label'):
     model.fit(train_x, train_y)
     preds = model.predict(test_x)
     probas = model.predict_proba(test_x)[:,1]
-    print(preds[:10])
+    print(preds[:10], probas[:10])
+    precision, recall, thresholds = precision_recall_curve(test_y, probas)
+    pr_auc = auc(recall, precision)
     print(f'accuracy: {accuracy_score(test_y, preds)}')
     print(f'ROC AUC: {roc_auc_score(test_y, probas)} ')
+    print(f'PR AUC: {pr_auc} ')
     breakpoint_var = True
 
 
