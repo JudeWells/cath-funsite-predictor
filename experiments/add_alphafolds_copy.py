@@ -255,10 +255,6 @@ def iterate_and_add(df, seq_df):
     """
     Strategy for matching
     """
-    completion_log_path = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/experiments/completed_domains.txt'
-    with open(completion_log_path) as f:
-        completed = f.readlines()
-    completed = [d.strip() for d in completed]
     has_alphafold_already = find_completed_domains(adf=df)
     results_list = []
     for i, domain in enumerate(df.domain.unique()):
@@ -282,8 +278,6 @@ def iterate_and_add(df, seq_df):
             elif match_status['perfect_match']:
                 add_alphafold_rep(df, match_status, combined, domain)
 
-
-
         except Exception as E:
             print(f'Error {domain}')
             match_status = {
@@ -293,9 +287,7 @@ def iterate_and_add(df, seq_df):
         results_list.append(match_status)
         if i % 20 == 0:
             df.to_csv('with_alphafold.csv', index=False)
-        with open(completion_log_path, 'a+') as f:
-            f.write("\n")
-            f.write(domain)
+
     df.to_csv('with_alphafold.csv', index=False)
     breakpoint_var = True
     results = pd.DataFrame(results_list)
