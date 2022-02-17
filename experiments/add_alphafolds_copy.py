@@ -7,7 +7,7 @@ import os
 import prody
 from prody.atomic.atomic import Atomic
 from experiments.add_geometricus import add_residue_col
-
+from Bio import pairwise2
 
 valid_residues = ['LEU', 'GLU', 'ARG', 'VAL', 'LYS', 'ILE', 'ASP', 'PHE', 'ALA', 'TYR', 'THR', 'SER', 'GLN', 'PRO',
                   'ASN', 'GLY', 'HIS', 'MET', 'TRP', 'CYS']
@@ -376,6 +376,28 @@ def alignment_tester():
     # check_true_length()
     # breakpoint_var = True
 
+def add_alphafold_rep2(df, mapping, domain, match_status):
+    '''
+    This version uses a sequence alignment which is encoded in the mapping dictionary
+    '''
+    one_domain = df[df.domain == domain]
+    alpha_rep = load_rep(domain)
+    if alpha_rep is None:
+        print(f'missing representation {domain}')
+        return
+    if alpha_rep['single'].shape[0] != len(match_status['alpha_seq']):
+        print(f'alpha rep does not match sequence {domain}')
+        return
+    for i, row in one_domain.iterrows():
+        pdb_num = row.domain_residue
+        if isinstance(pdb_num, int) and isinstance(min(mapping.keys()), str):
+            pdb_num = str(pdb_num)
+        alpha_position = mapping[pdb_num]
+        assert row.res_label == match_status['alpha_seq'][alpha_position]
+        df.loc[i, 'alpha_rep'] = str(alpha_rep['single'][alpha_position])
+    return df
+
+
 def add_alphafold_rep(df, match_status, combined, domain):
 
     one_domain = df[df.domain == domain]
@@ -421,10 +443,27 @@ def find_completed_domains(path2df=None, adf=None):
 def process_chain_in_index(combined, chain):
     return {k:v for k,v in combined.items() if chain in k.upper()}
 
-def trim_pdb_residues(combined, domain, chain, one_domain):
-    first_residue = one_domain.domain_residue.min()
-    last_residue = one_domain.domain_residue.max()
-    return {k:v for k,v in combined.items() if k>= first_residue and k<=last_residue}
+def create_mapping_dict(combined, match_status):
+    mapping = {}
+    pdb_keys = sorted(int(k) for k in combined.keys())
+    alignment = match_status['alignment']
+    pdb_counter = 0
+    alpha_counter = 0
+    for i, align_pdb in enumerate(alignment['seqB']):
+        align_alpha = alignment['seqA'][i]
+        if align_pdb != '-':
+            if align_pdb == align_alpha:
+                mapping[pdb_keys[pdb_counter]] = alpha_counter
+            pdb_counter +=1
+        if align_alpha != '-':
+            alpha_counter += 1
+    if all([letter2name[alignment['seqA'][mapping[k]]]==v for k,v in combined.items()]):
+        return mapping
+    else:
+        return None
+
+
+
 
 def iterate_and_add(df, seq_df):
     """
@@ -443,17 +482,18 @@ def iterate_and_add(df, seq_df):
             chain = domain[4]
             seq_alpha = seq_df[(seq_df.PDBID == domain[:4].lower()) & (seq_df.CHAIN == chain)].sequence.min()
             combined = make_combined_dict(domain, chain)
-            if combined is None:
+            if len(combined) > 500:
+                breakpoint_var = True
                 combined = make_combined_dict(domain, chain)
             if any(chain in str(k) for k in combined.keys()):
                 combined = process_chain_in_index(combined, chain)
             match_status = get_start_index_and_check_match(seq_alpha, combined)
-            if not match_status['perfect_match']:
-                one_domain = df[df.domain==domain]
-                combined = trim_pdb_residues(combined, domain, chain, one_domain)
-                match_status = get_start_index_and_check_match(seq_alpha, combined)
             match_status['domain'] = domain
-            if match_status['perfect_match']:
+            if not match_status['perfect_match']:
+                mapping_dict = create_mapping_dict(combined, match_status)
+                add_alphafold_rep2(df, mapping_dict, domain, match_status)
+
+            elif match_status['perfect_match']:
                 add_alphafold_rep(df, match_status, combined, domain)
 
 
@@ -475,8 +515,9 @@ def iterate_and_add(df, seq_df):
     results = pd.DataFrame(results_list)
     # results.to_csv('allignment_success_on_pdb_dict.csv', index=False)
 
-
-
+def get_alignment(alpha_seq, pdb_seq):
+    result = pairwise2.align.globalxx(alpha_seq, pdb_seq)[0]._asdict()
+    return result
 
 def get_start_index_and_check_match(alpha_seq, combined, domain=None, chain=None):
     """This function makes an adjustment at the beginning and the end of the sequence
@@ -491,6 +532,7 @@ def get_start_index_and_check_match(alpha_seq, combined, domain=None, chain=None
         elif len(matches) == 1:
             break
     start_index = matches[0][0]
+    alignment = get_alignment(alpha_seq, pdb_seq)
     if pdb_seq in alpha_seq:
         perfect_match = 1
     else:
@@ -500,6 +542,7 @@ def get_start_index_and_check_match(alpha_seq, combined, domain=None, chain=None
         'start_index': start_index,
         'alpha_seq': alpha_seq,
         'pdb_seq': pdb_seq,
+        'alignment':alignment
     }
     return one_row
 
