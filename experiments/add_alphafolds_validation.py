@@ -1,3 +1,4 @@
+import time
 import re
 import gzip
 import numpy as np
@@ -7,6 +8,15 @@ import os
 import prody
 from experiments.add_geometricus import add_residue_col
 from Bio import pairwise2
+
+"""
+This module loads the pre-computed alphafold representations and 
+aligns them with the existing dataset and adds the alphafold features
+This version of the code uses the index of the PDB file to identify the relevant columns (not splitting on white space)
+It also includes rigorous checking to ensure that the indexing does not result in any contrdiction in relation to the amino acid
+It also uses the sequence alignment tool where necessary to get a good alignment 
+(only uses alignement where the PDB sequence is not a subset of the alphafold sequence 
+"""
 
 valid_residues = ['LEU', 'GLU', 'ARG', 'VAL', 'LYS', 'ILE', 'ASP', 'PHE', 'ALA', 'TYR', 'THR', 'SER', 'GLN', 'PRO',
                   'ASN', 'GLY', 'HIS', 'MET', 'TRP', 'CYS']
@@ -22,13 +32,24 @@ def load_atom_groups_from_pickle():
         atom_groups = pickle.load(handle)
     return atom_groups
 
+def download_pdb(domain, chain, output_dir='pdbs'):
+    current_dir = os.getcwd()
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+    os.chdir(output_dir)
+    pdb_id = domain[:4]
+    prody.parsePDB(pdb_id, chain=chain)
+    os.chdir(current_dir)
+    time.sleep(0.33)
+
+
 def load_rep(dom_id):
     """
     This function takes a domain id and returns the corresponding alphafold
     representation for this domain as a numpy.ndarray
     """
     upper_dom_id = dom_id.upper()[:5]
-    directory = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/alpha_pickles/representation_pickles/'
+    directory = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/alpha_pickles/representation_pickles_model1_validation/'
     try:
         with open(directory + upper_dom_id + '.pickle', 'rb') as handle:
             representation = pickle.load(handle)
@@ -48,20 +69,6 @@ def add_rep_to_res(df, domain, representation, alignment):
         alphafold_idx = alignment[residue_idx]
         df.loc[i, 'alpha_embed'] = str(representation['single'][residue_idx, :])
 
-def get_all_atom_groups(df, output_dir='pdbs', pickle_grps=True):
-    atom_groups = {}
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
-    os.chdir(output_dir)
-    for dom_str in df.domain.unique():
-        pdb_id = dom_str[:-3]
-        chain = dom_str[-3].upper()
-        atom_grp = prody.parsePDB(pdb_id, chain=chain)
-        atom_groups[dom_str] = atom_grp
-
-    with open('atom_groups.pickle', 'wb') as handle:
-        pickle.dump(atom_groups, handle)
-    return atom_groups
 
 def find_expected_true_length(atom_group):
     valid_residues = ['LEU', 'GLU', 'ARG', 'VAL', 'LYS', 'ILE', 'ASP', 'PHE', 'ALA', 'TYR', 'THR', 'SER', 'GLN', 'PRO',
@@ -82,9 +89,12 @@ def gzip_open(filename, *args, **kwargs):
 
 
 def load_pdb_lines(pdb_code):
+    chain = pdb_code[4].upper()
     pdb_code = pdb_code[:4].lower()
     dir = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/experiments/pdbs/'
     filepath = dir + pdb_code.lower() + '.pdb.gz'
+    if not os.path.exists(filepath):
+        download_pdb(pdb_code, chain)
     with gzip_open(filepath) as handle:
         lines = handle.readlines()
     str_lines = [str(l) for l in lines]
@@ -181,7 +191,7 @@ def add_alphafold_rep2(df, mapping, domain, match_status):
         if isinstance(pdb_num, int) and isinstance(min(mapping.keys()), str):
             pdb_num = str(pdb_num)
         alpha_position = mapping[pdb_num]
-        assert row.res_label == match_status['alpha_seq'][alpha_position]
+        assert row.res_label == match_status['alpha_seq'][alpha_position] # todo - could do more checking here
         df.loc[i, 'alpha_rep'] = str(alpha_rep['single'][alpha_position])
     return df
 
@@ -205,7 +215,7 @@ def add_alphafold_rep(df, match_status, combined, domain):
 
         if pdb_num not in combined:
             combined = {re.sub('[A-z]', '', k):v for k,v in combined.items()}
-        res_idx_list = np.array(sorted(combined.keys()))
+        res_idx_list = np.array(sorted(combined.keys(), key=lambda x: int(x)))
         pdb_resname = name2letter[combined[pdb_num]]
         pdb_position = np.where(res_idx_list == pdb_num)[0][0]
         adjusted_pdb_position = pdb_position + match_status['start_index']
@@ -222,10 +232,11 @@ def find_completed_domains(path2df=None, adf=None):
     if adf is None:
         adf = pd.read_csv(path2df)
     completed_domains = []
-    for domain in adf.domain.unique():
-        one_domain = adf[adf.domain == domain]
-        if any(one_domain.alpha_rep.notnull()):
-            completed_domains.append(domain)
+    if 'alpha_rep' in adf.columns:
+        for domain in adf.domain.unique():
+            one_domain = adf[adf.domain == domain]
+            if any(one_domain.alpha_rep.notnull()):
+                completed_domains.append(domain)
     return completed_domains
 
 def process_chain_in_index(combined, chain):
@@ -264,9 +275,10 @@ def iterate_and_add(df, seq_df):
             chain = domain[4]
             seq_alpha = seq_df[(seq_df.PDBID == domain[:4].lower()) & (seq_df.CHAIN == chain)].sequence.min()
             combined = make_combined_dict(domain, chain)
-            if len(combined) > 500:
+            if len(combined) > 3000:
                 breakpoint_var = True
-                combined = make_combined_dict(domain, chain)
+                print(f'MORE THAN 3000 residues {domain}')
+                continue
             if any(chain in str(k) for k in combined.keys()):
                 combined = process_chain_in_index(combined, chain)
             match_status = get_start_index_and_check_match(seq_alpha, combined)
@@ -286,9 +298,9 @@ def iterate_and_add(df, seq_df):
             }
         results_list.append(match_status)
         if i % 20 == 0:
-            df.to_csv('with_alphafold.csv', index=False)
+            df.to_csv('validation_with_alphafold.csv', index=False)
 
-    df.to_csv('with_alphafold.csv', index=False)
+    df.to_csv('validation_with_alphafold.csv', index=False)
     breakpoint_var = True
     results = pd.DataFrame(results_list)
     # results.to_csv('allignment_success_on_pdb_dict.csv', index=False)
@@ -327,11 +339,18 @@ def get_start_index_and_check_match(alpha_seq, combined, domain=None, chain=None
     }
     return one_row
 
+def calculate_proportion_of_domains_downloaded(alpha_dir, df):
+    downloaded_domains  = set([f.split('.pickle')[0] for f in os.listdir(alpha_dir)])
+    dataset_domains = set([domain.upper()[:-2] for domain in df.domain.unique()])
+    proportion_downloaded  = len(downloaded_domains.intersection(dataset_domains)) / len(dataset_domains)
+    print(proportion_downloaded)
+
 
 if __name__=="__main__":
-    seq_df = pd.read_csv('/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/experiments/PPI_training_dataset_with_sequences.csv')
-    dir = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/alpha_pickles/representation_pickles'
-    df = pd.read_csv('/experiments/training_with_alphafold.csv')
+    seq_df = pd.read_csv('/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/experiments/PPI_validation_w_sequences.csv')
+    dir = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/alpha_pickles/representation_pickles_model1_validation/'
+    df = pd.read_csv('/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/experiments/validation_with_alphafold.csv')
     df = add_residue_col(df)
+    calculate_proportion_of_domains_downloaded(dir, df)
     iterate_and_add(df, seq_df)
 

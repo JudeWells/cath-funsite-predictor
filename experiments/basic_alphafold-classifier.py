@@ -19,7 +19,7 @@ def drop_other_columns(df):
 
 def prepare_df(path_to_df = None, target='res_label'):
     if path_to_df is None:
-        path_to_df = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/experiments/with_alphafold.csv'
+        path_to_df = 'validation_with_alphafold.csv'
     df = pd.read_csv(path_to_df)
     df = add_residue_col(df)
     print(f'proportion of rows with alpha_rep {df.alpha_rep.notnull().mean()}')
