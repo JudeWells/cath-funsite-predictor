@@ -1,8 +1,7 @@
+import time
 import pandas as pd
-from experiments.add_geometricus import add_residue_col
 import xgboost as xgb
 import numpy as np
-import re
 from sklearn.metrics import accuracy_score, roc_auc_score, precision_recall_curve, auc
 
 """
@@ -74,9 +73,11 @@ def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, valida
     train_y = train[target]
     test_y = test[target]
     model = xgb.XGBClassifier(
+        tree_method='gpu_hist',
+        gpu_id=1,
         n_estimators=1000,
         learning_rate=0.01,
-        subsample=0.8,
+        subsample=0.7,
         colsample_bytree=0.8,
         max_depth=7,
         gamma=1,
@@ -85,10 +86,11 @@ def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, valida
         scale_pos_weight=4,
         njobs=-1,
     )
-    if len(set(test_y)) > 2:
+    if len(set(test_y)) > 2: # if doing multiclass classification
         loss ='merror'
     else:
         loss = 'logloss'
+    start = time.time()
     if validation is not None:
         if validation == 'test':
             val_y = test_y
@@ -98,6 +100,8 @@ def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, valida
         model.fit(train_x, train_y, eval_metric=loss,  eval_set=eval_set, early_stopping_rounds=6)
     else:
         model.fit(train_x, train_y, eval_metric=loss)
+    train_time = time.time() - start
+    print(f'Training time {train_time}')
     preds = model.predict(test_x)
     train_probas = model.predict_proba(train_x)[:,1]
     train_precision, train_recall, train_thresholds = precision_recall_curve(train_y, train_probas)
