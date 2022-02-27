@@ -31,8 +31,6 @@ def check_if_alphafold_exists(domain_str):
     else:
         return 0
 
-train_path = 'training_with_alphafold.csv'
-test_path = 'validation_with_alphafold.csv'
 
 def create_missing_report(df):
     missing = df[df.alpha_rep == 'empty']
@@ -49,15 +47,18 @@ def create_missing_report(df):
     report.to_csv('missing_alphas_report.csv', index=False)
 
 
+if __name__=="__main__":
+    train_path = 'training_with_alphafold.csv'
+    test_path = 'validation_with_alphafold.csv'
 
-for df_path in [train_path, test_path]:
-    df = pd.read_csv(df_path)
-    alpha_features = extract_embedding_features(df)
-    drop_cols = [c for c in df.columns if c in [ 'index']]
-    combined_df = pd.concat([df, pd.DataFrame(alpha_features)], axis=1)
-    combined_df = combined_df.drop(drop_cols, axis=1)
-    assert len(combined_df.columns) == alpha_features.shape[1] + len(df.columns)
-    new_filename = 'processed_' + df_path
-    print(f"{df_path} {df.shape}")
-    combined_df.to_csv(new_filename)
-    create_missing_report(df)
+    for df_path in [train_path, test_path]:
+        df = pd.read_csv(df_path)
+        alpha_features = extract_embedding_features(df)
+        drop_cols = [c for c in df.columns if c in [ 'index']]
+        combined_df = pd.concat([df, pd.DataFrame(alpha_features)], axis=1)
+        combined_df = combined_df.drop(drop_cols, axis=1)
+        assert len(combined_df.columns) == alpha_features.shape[1] + len(df.columns)
+        new_filename = 'processed_' + df_path
+        print(f"{df_path} {df.shape}")
+        combined_df.to_csv(new_filename)
+        create_missing_report(df)
