@@ -1,8 +1,8 @@
 import pandas as pd
-from experiments.add_geometricus import add_residue_col
+
 import xgboost as xgb
 import numpy as np
-import re
+
 from sklearn.metrics import accuracy_score, roc_auc_score, precision_recall_curve, auc
 
 """
@@ -74,6 +74,8 @@ def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, valida
     train_y = train[target]
     test_y = test[target]
     model = xgb.XGBClassifier(
+        tree_method='gpu_hist',
+        gpu_id=1,
         n_estimators=1000,
         learning_rate=0.01,
         subsample=0.8,

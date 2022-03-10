@@ -75,7 +75,7 @@ def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, valida
     model = xgb.XGBClassifier(
         tree_method='gpu_hist',
         gpu_id=1,
-        n_estimators=1000,
+        n_estimators=2000,
         learning_rate=0.01,
         subsample=0.7,
         colsample_bytree=0.8,

@@ -328,8 +328,8 @@ def get_start_index_and_check_match(alpha_seq, combined, domain=None, chain=None
 
 
 if __name__=="__main__":
-    seq_df = pd.read_csv('/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/experiments/PPI_training_dataset_with_sequences.csv')
-    dir = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/alpha_pickles/c3_representation_pickles'
+    seq_df = pd.read_csv('../datasets/PPI/PPI_training_dataset_with_sequences.csv')
+    dir = '../alpha_pickles/c3_representation_pickles'
     # df = pd.read_csv('../datasets/PPI/PPI_training_dataset.csv') # use this if running for the first time
     df = pd.read_csv('c3_with_alphafold.csv')
     if 'alpha_rep' not in df.columns:
