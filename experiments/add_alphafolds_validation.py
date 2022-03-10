@@ -43,13 +43,13 @@ def download_pdb(domain, chain, output_dir='pdbs'):
     time.sleep(0.33)
 
 
-def load_rep(dom_id):
+def load_rep(dom_id, directory):
     """
     This function takes a domain id and returns the corresponding alphafold
     representation for this domain as a numpy.ndarray
     """
     upper_dom_id = dom_id.upper()[:5]
-    directory = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/alpha_pickles/representation_pickles_model1_validation/'
+    # directory = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/alpha_pickles/representation_pickles_model1_validation/'
     try:
         with open(directory + upper_dom_id + '.pickle', 'rb') as handle:
             representation = pickle.load(handle)
@@ -123,6 +123,22 @@ def get_missing_from_lines(lines, chain):
                 missing_dict[resnum] = resname
     return missing_dict
 
+def get_missing_from_lines2(lines, chain):
+    """
+    DO NOT USE
+    This function splits on row index but has been shown to be inconsistent:
+    some sequence ids start on row 25 and some start on row 26
+    and we do not know what happens in files where the sequence ids are 4 characters long
+    """
+    missing_dict = {}
+    missing = [l for l in lines if 'REMARK 465' in l and len(l)>25 and l[26].isnumeric and l[21]==chain and l[17:20] in valid_residues]
+    for mline in missing:
+        resnum = int(mline[25:].split()[0])
+        resname = mline[17:20]
+        missing_dict[resnum] = resname
+    return missing_dict
+
+
 def test_consistency(res_col, idx_col):
     """
     This function determins if the idx_col is consistent with being a list of indexes for each residue
@@ -162,7 +178,7 @@ def atom_identifier(lines, chain):
     if test_consistency(res_name, res_seq):
         return dict(zip(res_seq, res_name))
 
-def make_combined_dict(pdbid, chain):
+def make_seqID2res_dict(pdbid, chain):
     """
     aggregator of other functions to create a dictionary of resides from pdb file
     the residue dictionary is a combination of the ATOM lines and also missing residues
@@ -174,55 +190,57 @@ def make_combined_dict(pdbid, chain):
     return combined
 
 
-def add_alphafold_rep2(df, mapping, domain, match_status):
+def add_alphafold_rep_alignment(df, mapping, domain, match_status, dir):
     '''
     This version uses a sequence alignment which is encoded in the mapping dictionary
     '''
     one_domain = df[df.domain == domain]
-    alpha_rep = load_rep(domain)
+    alpha_rep = load_rep(domain, dir)
     if alpha_rep is None:
         print(f'missing representation {domain}')
         return
     if alpha_rep['single'].shape[0] != len(match_status['alpha_seq']):
         print(f'alpha rep does not match sequence {domain}')
         return
+    dimensions = alpha_rep['single'].shape[1]
     for i, row in one_domain.iterrows():
         pdb_num = row.domain_residue
         if isinstance(pdb_num, int) and isinstance(min(mapping.keys()), str):
             pdb_num = str(pdb_num)
         alpha_position = mapping[pdb_num]
-        assert row.res_label == match_status['alpha_seq'][alpha_position] # todo - could do more checking here
-        df.loc[i, 'alpha_rep'] = str(alpha_rep['single'][alpha_position])
+        assert row.res_label == match_status['alpha_seq'][alpha_position]
+        # df.loc[i, 'alpha_rep'] = str(alpha_rep['single'][alpha_position])
+        df.loc[i, [str(n) for n in range(dimensions)]] = alpha_rep['single'][alpha_position] #todo this can be be sped up
     return df
 
 
-def add_alphafold_rep(df, match_status, combined, domain):
+def add_alphafold_rep(df, match_status, seqID2res, domain, dir):
 
     one_domain = df[df.domain == domain]
-    alpha_rep = load_rep(domain)
+    alpha_rep = load_rep(domain, dir)
     if alpha_rep is None:
         print(f'missing representation {domain}')
         return
     if alpha_rep['single'].shape[0] != len(match_status['alpha_seq']):
         print(f'alpha rep does not match sequence {domain}')
         return
-
+    dimensions = len(alpha_rep['single'][0])
     for i, row in one_domain.iterrows():
         pdb_num = row.domain_residue
 
-        if isinstance(pdb_num, int) and isinstance(min(combined.keys()), str):
+        if isinstance(pdb_num, int) and isinstance(min(seqID2res.keys()), str):
             pdb_num = str(pdb_num)
 
-        if pdb_num not in combined:
-            combined = {re.sub('[A-z]', '', k):v for k,v in combined.items()}
-        res_idx_list = np.array(sorted(combined.keys(), key=lambda x: int(x)))
-        pdb_resname = name2letter[combined[pdb_num]]
+        if pdb_num not in seqID2res:
+            seqID2res = {re.sub('[A-z]', '', k):v for k,v in seqID2res.items()}
+        res_idx_list = np.array(sorted(seqID2res.keys(), key=lambda x: int(x)))
+        pdb_resname = name2letter[seqID2res[pdb_num]]
         pdb_position = np.where(res_idx_list == pdb_num)[0][0]
         adjusted_pdb_position = pdb_position + match_status['start_index']
         if not pdb_resname == match_status['pdb_seq'][pdb_position] == match_status['alpha_seq'][adjusted_pdb_position] == row.res_label:
             print('failed to match amino acid type')
             return
-        df.loc[i, 'alpha_rep'] = str(alpha_rep['single'][adjusted_pdb_position])
+        df.loc[i, [str(n) for n in range(dimensions)]] = alpha_rep['single'][adjusted_pdb_position] # todo this can be sped up
     return df
 
 def find_completed_domains(path2df=None, adf=None):
@@ -231,20 +249,18 @@ def find_completed_domains(path2df=None, adf=None):
     """
     if adf is None:
         adf = pd.read_csv(path2df)
-    completed_domains = []
-    if 'alpha_rep' in adf.columns:
-        for domain in adf.domain.unique():
-            one_domain = adf[adf.domain == domain]
-            if any(one_domain.alpha_rep.notnull()):
-                completed_domains.append(domain)
-    return completed_domains
+    if '383' in adf.columns:
+        completed_domains = adf[adf['383'].notnull()].domain.unique()
+        return completed_domains
+    else:
+        return set()
 
-def process_chain_in_index(combined, chain):
-    return {k:v for k,v in combined.items() if chain in k.upper()}
+def process_chain_in_index(seqID2res, chain):
+    return {k:v for k,v in seqID2res.items() if chain in k.upper()}
 
-def create_mapping_dict(combined, match_status):
+def create_mapping_dict(seqID2res, match_status):
     mapping = {}
-    pdb_keys = sorted(int(k) for k in combined.keys())
+    pdb_keys = sorted(int(k) for k in seqID2res.keys())
     alignment = match_status['alignment']
     pdb_counter = 0
     alpha_counter = 0
@@ -256,13 +272,13 @@ def create_mapping_dict(combined, match_status):
             pdb_counter +=1
         if align_alpha != '-':
             alpha_counter += 1
-    if all([letter2name[alignment['seqA'][mapping[k]]]==v for k,v in combined.items()]):
+    if all([letter2name[alignment['seqA'][mapping[k]]]==v for k,v in seqID2res.items()]):
         return mapping
     else:
         return None
 
 
-def iterate_and_add(df, seq_df):
+def iterate_and_add(df, seq_df, dir):
     """
     Strategy for matching
     """
@@ -274,21 +290,20 @@ def iterate_and_add(df, seq_df):
         try:
             chain = domain[4]
             seq_alpha = seq_df[(seq_df.PDBID == domain[:4].lower()) & (seq_df.CHAIN == chain)].sequence.min()
-            combined = make_combined_dict(domain, chain)
-            if len(combined) > 3000:
-                breakpoint_var = True
-                print(f'MORE THAN 3000 residues {domain}')
-                continue
-            if any(chain in str(k) for k in combined.keys()):
-                combined = process_chain_in_index(combined, chain)
-            match_status = get_start_index_and_check_match(seq_alpha, combined)
+            seqID2res = make_seqID2res_dict(domain, chain)
+
+
+
+            if any(chain in str(k) for k in seqID2res.keys()):
+                seqID2res = process_chain_in_index(seqID2res, chain)
+            match_status = get_start_index_and_check_match(seq_alpha, seqID2res)
             match_status['domain'] = domain
             if not match_status['perfect_match']:
-                mapping_dict = create_mapping_dict(combined, match_status)
-                add_alphafold_rep2(df, mapping_dict, domain, match_status)
+                mapping_dict = create_mapping_dict(seqID2res, match_status)
+                add_alphafold_rep_alignment(df, mapping_dict, domain, match_status, dir)
 
             elif match_status['perfect_match']:
-                add_alphafold_rep(df, match_status, combined, domain)
+                add_alphafold_rep(df, match_status, seqID2res, domain, dir)
 
         except Exception as E:
             print(f'Error {domain}')
@@ -298,12 +313,14 @@ def iterate_and_add(df, seq_df):
             }
         results_list.append(match_status)
         if i % 20 == 0:
-            df.to_csv('validation_with_alphafold.csv', index=False)
+            print(f'{i} domains complete')
+        if i % 200 == 0:
+            df.to_csv(path_df_w_features, index=False)
 
-    df.to_csv('validation_with_alphafold.csv', index=False)
+    df.to_csv(path_df_w_features, index=False)
     breakpoint_var = True
     results = pd.DataFrame(results_list)
-    # results.to_csv('allignment_success_on_pdb_dict.csv', index=False)
+    # results.to_csv('alignment_success_on_pdb_dict.csv', index=False)
 
 def get_alignment(alpha_seq, pdb_seq):
     result = pairwise2.align.globalxx(alpha_seq, pdb_seq)[0]._asdict()
@@ -312,10 +329,10 @@ def get_alignment(alpha_seq, pdb_seq):
         return None
     return result
 
-def get_start_index_and_check_match(alpha_seq, combined, domain=None, chain=None):
+def get_start_index_and_check_match(alpha_seq, seqID2res, domain=None, chain=None):
     """This function makes an adjustment at the beginning and the end of the sequence
     counts discontinuities in the middle"""
-    pdb_seq = ''.join([name2letter[v] for k,v in sorted(combined.items())])
+    pdb_seq = ''.join([name2letter[v] for k,v in sorted(seqID2res.items())])
     idx = 0
     for i in range(20, 1, -1):
         pdb_string  = pdb_seq[:i]
@@ -347,10 +364,14 @@ def calculate_proportion_of_domains_downloaded(alpha_dir, df):
 
 
 if __name__=="__main__":
+    path_df_w_features = 'val_c3_with_alphafold_v2.csv' # this is the path where that dataset with all features will be saved
     seq_df = pd.read_csv('/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/experiments/PPI_validation_w_sequences.csv')
-    dir = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/alpha_pickles/representation_pickles_model1_validation/'
-    df = pd.read_csv('/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/experiments/validation_with_alphafold.csv')
+    dir = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/alpha_pickles/c3_combined/'
+    df = pd.read_csv('../datasets/PPI/PPI_validation_dataset.csv') # use this if running for the first time
+    # df = pd.read_csv(path_df_w_features)
+    if 'alpha_rep' not in df.columns:
+        df['alpha_rep'] = None
     df = add_residue_col(df)
-    calculate_proportion_of_domains_downloaded(dir, df)
-    iterate_and_add(df, seq_df)
+    iterate_and_add(df, seq_df, dir)
+
 

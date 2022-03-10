@@ -206,7 +206,7 @@ def add_alphafold_rep(df, match_status, combined, domain, dir):
 
         if pdb_num not in combined:
             combined = {re.sub('[A-z]', '', k):v for k,v in combined.items()}
-        res_idx_list = np.array(sorted(combined.keys()))
+        res_idx_list = np.array(sorted(combined.keys(), key=lambda x: int(x)))
         pdb_resname = name2letter[combined[pdb_num]]
         pdb_position = np.where(res_idx_list == pdb_num)[0][0]
         adjusted_pdb_position = pdb_position + match_status['start_index']
@@ -222,8 +222,11 @@ def find_completed_domains(path2df=None, adf=None):
     """
     if adf is None:
         adf = pd.read_csv(path2df)
-    completed_domains = adf[adf['383'].notnull()].domain.unique()
-    return completed_domains
+    if '383' in adf.columns:
+        completed_domains = adf[adf['383'].notnull()].domain.unique()
+        return completed_domains
+    else:
+        return set()
 
 def process_chain_in_index(combined, chain):
     return {k:v for k,v in combined.items() if chain in k.upper()}
@@ -285,9 +288,9 @@ def iterate_and_add(df, seq_df, dir):
         if i % 20 == 0:
             print(f'{i} domains complete')
         if i % 200 == 0:
-            df.to_csv('c3_with_alphafold.csv', index=False)
+            df.to_csv(path_df_w_features, index=False)
 
-    df.to_csv('c3_with_alphafold.csv', index=False)
+    df.to_csv(path_df_w_features, index=False)
     breakpoint_var = True
     results = pd.DataFrame(results_list)
     results.to_csv('c3_allignment_success_on_pdb_dict.csv', index=False)
@@ -328,12 +331,14 @@ def get_start_index_and_check_match(alpha_seq, combined, domain=None, chain=None
 
 
 if __name__=="__main__":
-    seq_df = pd.read_csv('../datasets/PPI/PPI_training_dataset_with_sequences.csv')
-    dir = '../alpha_pickles/c3_representation_pickles'
-    # df = pd.read_csv('../datasets/PPI/PPI_training_dataset.csv') # use this if running for the first time
-    df = pd.read_csv('c3_with_alphafold.csv')
+    path_df_w_features = 'val_c3_with_alphafold.csv' # this is the path where that dataset with all features will be saved
+    seq_df = pd.read_csv('/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/experiments/PPI_validation_w_sequences.csv')
+    dir = '/Users/judewells/Documents/dataScienceProgramming/cath-funsite-predictor/alpha_pickles/c3_val_representation_pickles'
+    df = pd.read_csv('../datasets/PPI/PPI_validation_dataset.csv') # use this if running for the first time
+    # df = pd.read_csv(path_df_w_features)
     if 'alpha_rep' not in df.columns:
         df['alpha_rep'] = None
     df = add_residue_col(df)
     iterate_and_add(df, seq_df, dir)
+
 

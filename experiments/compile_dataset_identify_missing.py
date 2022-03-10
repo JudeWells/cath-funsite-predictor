@@ -8,8 +8,6 @@ representations saved as a string column and saves it as a dataframe
 where each dimension of the representation is a separate column
 """
 
-def convert_alpha_str_to_columns(df):
-    pass
 
 def convert_rep_to_numpy(repstr):
     if repstr == 'empty':
@@ -46,6 +44,11 @@ def create_missing_report(df):
     report = pd.DataFrame(rows)
     report.to_csv('missing_alphas_report.csv', index=False)
 
+def expand_and_combine_embedding_strings(df):
+    alpha_features = extract_embedding_features(df)
+    combined_df = pd.concat([df, pd.DataFrame(alpha_features)], axis=1)
+    return combined_df
+
 
 if __name__=="__main__":
     train_path = 'training_with_alphafold.csv'
@@ -53,11 +56,7 @@ if __name__=="__main__":
 
     for df_path in [train_path, test_path]:
         df = pd.read_csv(df_path)
-        alpha_features = extract_embedding_features(df)
-        drop_cols = [c for c in df.columns if c in [ 'index']]
-        combined_df = pd.concat([df, pd.DataFrame(alpha_features)], axis=1)
-        combined_df = combined_df.drop(drop_cols, axis=1)
-        assert len(combined_df.columns) == alpha_features.shape[1] + len(df.columns)
+        combined_df = expand_and_combine_embedding_strings(df)
         new_filename = 'processed_' + df_path
         print(f"{df_path} {df.shape}")
         combined_df.to_csv(new_filename)

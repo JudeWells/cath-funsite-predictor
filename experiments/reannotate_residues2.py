@@ -2,12 +2,16 @@ import os
 import copy
 import pandas as pd
 
+"""
+This script adds Neel's annotations to the residues as an additional column
+The output is saved with the suffix annotated_
+"""
 
 true_path = '../datasets/PPI/NEEL-generated_dataset/PPI_training_and_validation.csv'
 true_ann = pd.read_csv(true_path)
 
-train_path = 'processed_training_with_alphafold.csv'
-test_path = 'processed_validation_with_alphafold.csv'
+train_path = 'c3_with_alphafold.csv'
+test_path = 'val_c3_with_alphafold.csv'
 
 train = pd.read_csv(train_path)
 test = pd.read_csv(test_path)
