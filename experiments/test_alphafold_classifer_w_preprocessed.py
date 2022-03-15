@@ -112,7 +112,7 @@ def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, valida
     precision, recall, thresholds = precision_recall_curve(test_y, probas)
     pr_auc = auc(recall, precision)
     print(f'DF shape: {train_x.shape}')
-    print(f'test shape: {test_x.shape}')
+    print(f'Test shape {test_x.shape}')
     print(f'TRAINING PR AUC: {train_pr_auc}')
     print(f'accuracy: {accuracy_score(test_y, preds)}')
     print(f'ROC AUC: {roc_auc_score(test_y, probas)} ')
@@ -120,14 +120,18 @@ def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, valida
     return probas
 
 def drop_missing_alphafold_rows(df):
+    if 'alpha_rep' in df.columns:
+        df = df.drop('alpha_rep', axis=1)
     missing_index = df[df[[str(i) for i in range(384)]].max(axis=1) == 0].index
-    return df.drop(missing_index)
+    drop_all_zeros = df.drop(missing_index)
+    return drop_all_zeros.dropna()
 
 def drop_inconsistent_rows(df):
     missing_index = df[df.PPI_interface_true != df.annotation_IBIS_PPI_INTERCHAIN].index
     return df.drop(missing_index)
 
 def main():
+    # target = 'annotation_IBIS_PPI_INTERCHAIN'
     target = 'PPI_interface_true'
     train = drop_missing_alphafold_rows(pd.read_csv('annotated_processed_training_with_alphafold_v2.csv'))
     test = drop_missing_alphafold_rows(pd.read_csv('annotated_processed_validation_with_alphafold.csv'))
@@ -140,7 +144,7 @@ def main():
         pred_colname = 'af_' + str(use_alphafold) + '_pred'
         prediction_columns.append(pred_colname)
         test[pred_colname] = predicted_probs
-    test[['domain', 'domain_residue', 'res_label',  target]+prediction_columns].to_csv('classifier_results_on_validation.csv')
+    test[['domain', 'domain_residue', 'res_label',  target]+prediction_columns].to_csv('classifier_results_on_validation.csv', index=False)
 
 
 if __name__=='__main__':
