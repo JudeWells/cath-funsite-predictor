@@ -116,11 +116,11 @@ def match_invariants(ppi_df, atom_groups, invariants, kmer_output_filename, radi
 
 if __name__ == '__main__':
     basedir = '../datasets/PPI/'
-    filenames = ['PPI_validation_dataset', 'PPI_training_dataset.csv']
+    filenames = ['PPI_validation_dataset.csv', 'PPI_training_dataset.csv']
     for filename in filenames:
         kmer_output_filename = 'kmers_' + filename
         radii_output_filename = 'radii_' + filename
-        df = pd.read_csv(basedir + 'PPI_training_dataset.csv')
+        df = pd.read_csv(basedir + filename)
         df = add_residue_col(df)
         atom_groups, invariants_kmer, invariants_radius = generate_invariants(df)
         invariants, sequences = refactor_invariants(invariants_kmer, invariants_radius)
