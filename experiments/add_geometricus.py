@@ -114,14 +114,24 @@ def match_invariants(ppi_df, atom_groups, invariants, kmer_output_filename, radi
     radii_df.to_csv(radii_output_filename, index=False)
     return kmers_df, radii_df
 
-# if __name__ == '__main__':
-#     basedir = '../datasets/PPI/'
-#     filenames = ['PPI_validation_dataset', 'PPI_training_dataset.csv']
-#     for filename in filenames:
-#         kmer_output_filename = 'kmers_' + filename
-#         radii_output_filename = 'radii_' + filename
-#         df = pd.read_csv(basedir + 'PPI_training_dataset.csv')
-#         df = add_residue_col(df)
-#         atom_groups, invariants_kmer, invariants_radius = generate_invariants(df)
-#         invariants, sequences = refactor_invariants(invariants_kmer, invariants_radius)
-#         kmers_df, radii_df = match_invariants(df, atom_groups, invariants, kmer_output_filename, radii_output_filename)
+if __name__ == '__main__':
+    basedir = '../datasets/PPI/'
+    filenames = ['PPI_validation_dataset', 'PPI_training_dataset.csv']
+    for filename in filenames:
+        kmer_output_filename = 'kmers_' + filename
+        radii_output_filename = 'radii_' + filename
+        df = pd.read_csv(basedir + 'PPI_training_dataset.csv')
+        df = add_residue_col(df)
+        atom_groups, invariants_kmer, invariants_radius = generate_invariants(df)
+        invariants, sequences = refactor_invariants(invariants_kmer, invariants_radius)
+        kmers_df, radii_df = match_invariants(df, atom_groups, invariants, kmer_output_filename, radii_output_filename)
+        # basedir = '../datasets/PPI/'
+        # df = pd.read_csv(basedir + 'PPI_training_dataset.csv')
+        # kmers_df = pd.read_csv('training_kmers.csv')
+        # radii_df = pd.read_csv('training_radii.csv')
+        combined_df = pd.concat([df, kmers_df, radii_df],axis=1)
+        combined_dataset_filepath = basedir + 'geometricus_' + filename
+        combined_df.to_csv(combined_dataset_filepath, index=False)
+        breakpoint_var = True
+
+
