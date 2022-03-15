@@ -39,7 +39,8 @@ def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, valida
         ff_train_x = train[features_ff]
         ff_test_x = test[features_ff]
     else:
-        ff_train_x = ff_test_x = pd.DataFrame()
+        ff_train_x = pd.DataFrame()
+        ff_test_x = pd.DataFrame()
 
     if validation is not None:
         if validation == 'test':
