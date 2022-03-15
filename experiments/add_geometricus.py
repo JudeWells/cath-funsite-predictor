@@ -1,3 +1,5 @@
+import os.path
+
 import numpy as np
 import pandas as pd
 from geometricus import MomentInvariants, SplitType
@@ -29,11 +31,13 @@ def add_residue_col(ppi):
 
 def refactor_invariants(invariants_kmer, invariants_radius):
     invariants = {}
+    sequences = {}
     for i in range(len(invariants_kmer)):
         kmer = invariants_kmer[i]
         radius = invariants_radius[i]
         pdb_ref = invariants_kmer[i].name.lower()
         new_dict = {}
+        sequences[pdb_ref] = invariants_kmer[i].sequence
         for j in range(len(kmer.sequence)):
             new_dict[j] = {
                 'resname': kmer.sequence[j],
@@ -42,13 +46,17 @@ def refactor_invariants(invariants_kmer, invariants_radius):
 
             }
         invariants[pdb_ref] = new_dict
-    return invariants
+    return invariants, sequences
 
 
-def generate_invariants(ppi_df):
+def generate_invariants(ppi_df, pdb_file_dir='pdbs/'):
     atom_groups = []
     invariants_kmer = []
     invariants_radius = []
+    if not os.path.exists(pdb_file_dir):
+        os.mkdir(pdb_file_dir)
+    current_directory = os.getcwd()
+    os.chdir(pdb_file_dir)
     # iterates through all rows of dataframe and obtains geometricus features
     for dom_str in ppi_df.domain.unique():
         pdb_id = dom_str[:-3]
@@ -57,6 +65,7 @@ def generate_invariants(ppi_df):
         atom_groups.append(atom_grp)
         invariants_kmer.append(MomentInvariants.from_prody_atomgroup(dom_str, atom_grp, split_type=SplitType.KMER, split_size=16))
         invariants_radius.append(MomentInvariants.from_prody_atomgroup(dom_str, atom_grp, split_type=SplitType.RADIUS, split_size=10))
+    os.chdir(current_directory)
     return atom_groups, invariants_kmer, invariants_radius
 
 def make_atomgroup_dict(atom_groups):
@@ -64,10 +73,8 @@ def make_atomgroup_dict(atom_groups):
     atom_group_dict = dict(zip(atom_group_names, atom_groups))
     return atom_group_dict
 
-def match_invariants(ppi_df, atom_groups, invariants):
-    """
-    Matches the geometricus invariants for each residue in the dataframe
-    """
+def match_invariants(ppi_df, atom_groups, invariants, kmer_output_filename, radii_output_filename):
+    """Matches the geometricus invariants for each residue in the dataframe"""
     dud_row = np.array([-1,-1,-1,-1])
     kmer_rows = []
     radius_rows = []
@@ -99,15 +106,22 @@ def match_invariants(ppi_df, atom_groups, invariants):
             breakpoint_var = True
             continue
         if i % 1000 == 0:
-            pd.DataFrame(kmer_rows, columns=['k1', 'k2', 'k3', 'k4']).to_csv('training_kmers.csv', index=False)
-            pd.DataFrame(radius_rows, columns=['r1', 'r2', 'r3', 'r4']).to_csv('training_radii.csv', index=False)
-    pd.DataFrame(kmer_rows, columns=['k1', 'k2', 'k3', 'k4']).to_csv('training_kmers.csv', index=False)
-    pd.DataFrame(radius_rows, columns=['r1', 'r2', 'r3', 'r4']).to_csv('training_radii.csv', index=False)
+            pd.DataFrame(kmer_rows, columns=['k1', 'k2', 'k3', 'k4']).to_csv(kmer_output_filename, index=False)
+            pd.DataFrame(radius_rows, columns=['r1', 'r2', 'r3', 'r4']).to_csv(radii_output_filename, index=False)
+    kmers_df = pd.DataFrame(kmer_rows, columns=['k1', 'k2', 'k3', 'k4'])
+    radii_df = pd.DataFrame(radius_rows, columns=['r1', 'r2', 'r3', 'r4'])
+    kmers_df.to_csv(kmer_output_filename, index=False)
+    radii_df.to_csv(radii_output_filename, index=False)
+    return kmers_df, radii_df
 
-if __name__ == '__main__':
-    basedir = '../datasets/PPI/'
-    df = pd.read_csv(basedir + 'PPI_training_dataset.csv')
-    df = add_residue_col(df)
-    atom_groups, invariants_kmer, invariants_radius = generate_invariants(df)
-    invariants = refactor_invariants(invariants_kmer, invariants_radius)
-    match_invariants(df, atom_groups, invariants)
+# if __name__ == '__main__':
+#     basedir = '../datasets/PPI/'
+#     filenames = ['PPI_validation_dataset', 'PPI_training_dataset.csv']
+#     for filename in filenames:
+#         kmer_output_filename = 'kmers_' + filename
+#         radii_output_filename = 'radii_' + filename
+#         df = pd.read_csv(basedir + 'PPI_training_dataset.csv')
+#         df = add_residue_col(df)
+#         atom_groups, invariants_kmer, invariants_radius = generate_invariants(df)
+#         invariants, sequences = refactor_invariants(invariants_kmer, invariants_radius)
+#         kmers_df, radii_df = match_invariants(df, atom_groups, invariants, kmer_output_filename, radii_output_filename)
