@@ -75,7 +75,7 @@ def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, valida
     model = xgb.XGBClassifier(
         tree_method='gpu_hist',
         gpu_id=1,
-        n_estimators=2000,
+        n_estimators=4000,
         learning_rate=0.01,
         subsample=0.7,
         colsample_bytree=0.8,
@@ -111,6 +111,7 @@ def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, valida
     precision, recall, thresholds = precision_recall_curve(test_y, probas)
     pr_auc = auc(recall, precision)
     print(f'DF shape: {train_x.shape}')
+    print(f'test shape: {test_x.shape}')
     print(f'TRAINING PR AUC: {train_pr_auc}')
     print(f'accuracy: {accuracy_score(test_y, preds)}')
     print(f'ROC AUC: {roc_auc_score(test_y, probas)} ')
@@ -118,7 +119,7 @@ def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, valida
     return probas
 
 def drop_missing_alphafold_rows(df):
-    missing_index = df[df.alpha_rep == 'empty'].index
+    missing_index = df[df[[str(i) for i in range(384)]].max(axis=1) == 0].index
     return df.drop(missing_index)
 
 def drop_inconsistent_rows(df):
@@ -127,10 +128,10 @@ def drop_inconsistent_rows(df):
 
 def main():
     target = 'PPI_interface_true'
-    train = drop_missing_alphafold_rows(pd.read_csv('annotated_processed_training_with_alphafold.csv'))
+    train = drop_missing_alphafold_rows(pd.read_csv('annotated_processed_training_with_alphafold_v2.csv'))
     test = drop_missing_alphafold_rows(pd.read_csv('annotated_processed_validation_with_alphafold.csv'))
-    train = drop_inconsistent_rows(train)
-    test = drop_inconsistent_rows(test)
+    # train = drop_inconsistent_rows(train)
+    # test = drop_inconsistent_rows(test)
     prediction_columns =[]
     for use_alphafold in [True, False]:
         print(f'---USE ALPHAFOLD: {use_alphafold}---')
@@ -138,7 +139,7 @@ def main():
         pred_colname = 'af_' + str(use_alphafold) + '_pred'
         prediction_columns.append(pred_colname)
         test[pred_colname] = predicted_probs
-    test[['domain', 'domain_residue', 'res_label',  target]+prediction_columns].to_csv('annotated_ppi_alphafold_predictions_validation.csv')
+    test[['domain', 'domain_residue', 'res_label',  target]+prediction_columns].to_csv('classifier_results_on_validation.csv')
 
 
 if __name__=='__main__':
