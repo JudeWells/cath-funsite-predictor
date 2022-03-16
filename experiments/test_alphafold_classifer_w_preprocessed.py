@@ -121,6 +121,14 @@ def drop_inconsistent_rows(df):
     missing_index = df[df.PPI_interface_true != df.annotation_IBIS_PPI_INTERCHAIN].index
     return df.drop(missing_index)
 
+def add_geometricus(train, test):
+    geometricus_dir = '../datasets/PPI/'
+    train_radii = pd.read_csv(geometricus_dir + 'geometricus_training_radii.csv')
+    train_kmers = pd.read_csv(geometricus_dir + 'geometricus_training_kmers.csv')
+    val_radii = pd.read_csv(geometricus_dir + 'geometricus_validation_radii.csv')
+    val_kmers = pd.read_csv(geometricus_dir + 'geometricus_validation_kmers.csv')
+    pass
+
 def main():
     target = 'PPI_interface_true'
     train = drop_missing_alphafold_rows(pd.read_csv('annotated_processed_training_with_alphafold.csv'))
@@ -129,12 +137,18 @@ def main():
     test = drop_inconsistent_rows(test)
     prediction_columns =[]
     for use_alphafold in [True, False]:
-        print(f'---USE ALPHAFOLD: {use_alphafold}---')
-        predicted_probs = fit_and_evaluate(train, test, target=target, use_alphafold=use_alphafold, use_ff=True)
-        pred_colname = 'af_' + str(use_alphafold) + '_pred'
-        prediction_columns.append(pred_colname)
-        test[pred_colname] = predicted_probs
-    test[['domain', 'domain_residue', 'res_label',  target]+prediction_columns].to_csv('annotated_ppi_alphafold_predictions_validation.csv')
+        for use_geometricus in [True, False]:
+            print(f'---USE ALPHAFOLD: {use_alphafold}---')
+            print(f'---USE GEOMETRICUS: {use_geometricus}---')
+            if use_geometricus:
+                train2, test2 = add_geometricus(train, test)
+            else:
+                train2, test2 = train, test
+            predicted_probs = fit_and_evaluate(train2, test2, target=target, use_alphafold=use_alphafold, use_ff=True)
+            pred_colname = 'af_' + str(use_alphafold) + '_pred'
+            prediction_columns.append(pred_colname)
+            test[pred_colname] = predicted_probs
+    test[['domain', 'domain_residue', 'res_label',  target]+prediction_columns].to_csv('prediction_results.csv')
 
 
 if __name__=='__main__':
