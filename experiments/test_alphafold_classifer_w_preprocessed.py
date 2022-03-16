@@ -1,8 +1,7 @@
+import time
 import pandas as pd
-from experiments.add_geometricus import add_residue_col
 import xgboost as xgb
 import numpy as np
-import re
 from sklearn.metrics import accuracy_score, roc_auc_score, precision_recall_curve, auc
 
 """
@@ -31,52 +30,35 @@ def domain_train_test_split(df, split_by_domain=True, train_prop = 0.7):
         test = df.iloc[last_train_idx:]
     return train, test
 
-def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, validation=None, use_ff=True):
+def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, validation=None, use_ff=True, use_geometricus=False):
     """
     Note that this version of the function assumes alphafold features have been
     pre-computed and exist in the dataframe as columns labeled 0-383
     """
+    features = []
     if use_ff:
-        ff_train_x = train[features_ff]
-        ff_test_x = test[features_ff]
-    else:
-        ff_train_x = ff_test_x = pd.DataFrame()
+        features += features_ff
+    if use_alphafold:
+        features += [str(i) for i in range(384)]
+    if use_geometricus:
+        features += ['k1', 'k2', 'k3', 'k4', 'r1', 'r2', 'r3', 'r4']
 
+    train_x = train[features]
+    test_x = test[features]
     if validation is not None:
         if validation == 'test':
-            ff_val_x = ff_test_x
+            val_x = test_x
         else:
-            ff_val_x = validation[features_ff]
+            val_x = validation[features]
 
-    if use_alphafold:
-        train_x = train[[str(i) for i in range(384)]]
-        test_x = test[[str(i) for i in range(384)]]
-        assert all(ff_train_x.columns == ff_test_x.columns)
-        if use_ff: # add the funfam features to the alphafold features
-            train_x = pd.concat([pd.DataFrame(train_x), ff_train_x], axis=1)
-            test_x = pd.concat([pd.DataFrame(test_x), ff_test_x], axis=1)
-            if 'index' in train_x.columns:
-                train_x.drop('index', axis=1, inplace=True)
-                test_x.drop('index', axis=1, inplace=True)
-        if validation is not None:
-            if validation == 'test': # use the test set for early stopping
-                val_x = test_x
-            else:
-                val_x = validation[[str(i) for i in range(384)]]
-                val_x = pd.concat([pd.DataFrame(val_x), ff_val_x.reset_index()], axis=1)
-                val_x.drop('index', axis=1, inplace=True)
-
-    else:
-        train_x = ff_train_x
-        test_x = ff_test_x
-        if validation is not None:
-            val_x = ff_val_x
     train_y = train[target]
     test_y = test[target]
     model = xgb.XGBClassifier(
-        n_estimators=1000,
+        tree_method='gpu_hist',
+        gpu_id=0,
+        n_estimators=2000,
         learning_rate=0.01,
-        subsample=0.8,
+        subsample=0.7,
         colsample_bytree=0.8,
         max_depth=7,
         gamma=1,
@@ -85,10 +67,11 @@ def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, valida
         scale_pos_weight=4,
         njobs=-1,
     )
-    if len(set(test_y)) > 2:
+    if len(set(test_y)) > 2: # if doing multiclass classification
         loss ='merror'
     else:
         loss = 'logloss'
+    start = time.time()
     if validation is not None:
         if validation == 'test':
             val_y = test_y
@@ -98,6 +81,8 @@ def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, valida
         model.fit(train_x, train_y, eval_metric=loss,  eval_set=eval_set, early_stopping_rounds=6)
     else:
         model.fit(train_x, train_y, eval_metric=loss)
+    train_time = time.time() - start
+    print(f'Training time {train_time}')
     preds = model.predict(test_x)
     train_probas = model.predict_proba(train_x)[:,1]
     train_precision, train_recall, train_thresholds = precision_recall_curve(train_y, train_probas)
@@ -107,6 +92,7 @@ def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, valida
     precision, recall, thresholds = precision_recall_curve(test_y, probas)
     pr_auc = auc(recall, precision)
     print(f'DF shape: {train_x.shape}')
+    print(f'Test shape {test_x.shape}')
     print(f'TRAINING PR AUC: {train_pr_auc}')
     print(f'accuracy: {accuracy_score(test_y, preds)}')
     print(f'ROC AUC: {roc_auc_score(test_y, probas)} ')
@@ -114,41 +100,52 @@ def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, valida
     return probas
 
 def drop_missing_alphafold_rows(df):
-    missing_index = df[df.alpha_rep == 'empty'].index
-    return df.drop(missing_index)
+    if 'alpha_rep' in df.columns:
+        df = df.drop('alpha_rep', axis=1)
+    missing_index = df[df[[str(i) for i in range(384)]].max(axis=1) == 0].index
+    drop_all_zeros = df.drop(missing_index)
+    return drop_all_zeros.dropna()
 
 def drop_inconsistent_rows(df):
     missing_index = df[df.PPI_interface_true != df.annotation_IBIS_PPI_INTERCHAIN].index
     return df.drop(missing_index)
 
-def add_geometricus(train, test):
-    geometricus_dir = '../datasets/PPI/'
-    train_radii = pd.read_csv(geometricus_dir + 'geometricus_training_radii.csv')
-    train_kmers = pd.read_csv(geometricus_dir + 'geometricus_training_kmers.csv')
-    val_radii = pd.read_csv(geometricus_dir + 'geometricus_validation_radii.csv')
-    val_kmers = pd.read_csv(geometricus_dir + 'geometricus_validation_kmers.csv')
-    pass
+def add_geometricus_features(train, test, geo_train_path, geo_test_path):
+    train_geometricus = pd.read_csv(geo_train_path)
+    geometricus_features = ['k1', 'k2', 'k3', 'k4', 'r1', 'r2', 'r3', 'r4']
+    train = train.join(train_geometricus.set_index('residue_string', drop=True)[geometricus_features],
+                       on='residue_string', how='left')
+    del train_geometricus
+    test_geometricus = pd.read_csv(geo_test_path)
+    test = test.drop('residue_string', axis=1).join(test_geometricus[geometricus_features], how='left')
+    del test_geometricus
+    return train, test
 
 def main():
+    # target = 'annotation_IBIS_PPI_INTERCHAIN'
     target = 'PPI_interface_true'
-    train = drop_missing_alphafold_rows(pd.read_csv('annotated_processed_training_with_alphafold.csv'))
-    test = drop_missing_alphafold_rows(pd.read_csv('annotated_processed_validation_with_alphafold.csv'))
-    train = drop_inconsistent_rows(train)
-    test = drop_inconsistent_rows(test)
+    train = pd.read_csv('annotated_processed_training_with_alphafold_v2.csv')
+    test = pd.read_csv('annotated_processed_validation_with_alphafold.csv')
+    geometricus_train_path = '../datasets/PPI/geometricus_PPI_training_dataset.csv'
+    geometricus_test_path = '../datasets/PPI/geometricus_PPI_validation_dataset.csv'
+    train, test = add_geometricus_features(train, test, geometricus_train_path, geometricus_test_path)
+    train = drop_missing_alphafold_rows(train)
+    test = drop_missing_alphafold_rows(test)
+
+    # train = drop_inconsistent_rows(train)
+    # test = drop_inconsistent_rows(test)
     prediction_columns =[]
-    for use_alphafold in [True, False]:
-        for use_geometricus in [True, False]:
-            print(f'---USE ALPHAFOLD: {use_alphafold}---')
-            print(f'---USE GEOMETRICUS: {use_geometricus}---')
-            if use_geometricus:
-                train2, test2 = add_geometricus(train, test)
-            else:
-                train2, test2 = train, test
-            predicted_probs = fit_and_evaluate(train2, test2, target=target, use_alphafold=use_alphafold, use_ff=True)
-            pred_colname = 'af_' + str(use_alphafold) + '_pred'
-            prediction_columns.append(pred_colname)
-            test[pred_colname] = predicted_probs
-    test[['domain', 'domain_residue', 'res_label',  target]+prediction_columns].to_csv('prediction_results.csv')
+    for use_geometricus in [True, False]:
+        for use_alphafold in [True, False]:
+            for use_ff in [True, False]:
+                if use_ff == use_geometricus == use_alphafold == False:
+                    continue
+                print(f'---USE ALPHAFOLD: {use_alphafold}, USE GEOMET: {use_geometricus}, USE FF: {use_ff}---')
+                predicted_probs = fit_and_evaluate(train, test, target=target, use_alphafold=use_alphafold, use_ff=use_ff, use_geometricus=use_geometricus)
+                pred_colname = 'af_' + str(use_alphafold) + '_pred'
+                prediction_columns.append(pred_colname)
+                test[pred_colname] = predicted_probs
+    # test[['domain', 'domain_residue', 'res_label',  target]+prediction_columns].to_csv('classifier_results_on_validation.csv', index=False)
 
 
 if __name__=='__main__':
