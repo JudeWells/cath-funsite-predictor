@@ -2,7 +2,9 @@ import time
 import pandas as pd
 import xgboost as xgb
 import numpy as np
-from sklearn.metrics import accuracy_score, roc_auc_score, precision_recall_curve, auc, matthews_corrcoef
+from sklearn.metrics import accuracy_score, roc_auc_score, precision_recall_curve, auc, matthews_corrcoef, f1_score
+import matplotlib.pyplot as plt
+import shap
 
 """
 This script assumes that there are DFs stored on disk that already have alphafold features
@@ -22,9 +24,44 @@ features_generic = [
                'A_pssm_psiblast','A_wop_psiblast','C_pssm_psiblast','C_wop_psiblast','D_pssm_psiblast','D_wop_psiblast','E_pssm_psiblast','E_wop_psiblast','F_pssm_psiblast','F_wop_psiblast','G_pssm_psiblast','G_wop_psiblast','H_pssm_psiblast','H_wop_psiblast','I_pssm_psiblast','I_wop_psiblast','S_pssm_psiblast','K_pssm_psiblast','K_wop_psiblast','L_pssm_psiblast','L_wop_psiblast','M_pssm_psiblast','M_wop_psiblast','R_wop_psiblast','N_pssm_psiblast','N_wop_psiblast','P_pssm_psiblast','P_wop_psiblast','Q_pssm_psiblast','Q_wop_psiblast','R_pssm_psiblast','S_wop_psiblast','T_pssm_psiblast','T_wop_psiblast','V_pssm_psiblast','V_wop_psiblast','Y_wop_psiblast','Y_pssm_psiblast','W_wop_psiblast','W_pssm_psiblast','info_per_pos_psiblast','gapless_match_to_pseudocounts_psiblast','entwop_score_psiblast',
               ]
 
+features_15 = [
+                'scons',
+                'rsa_allatoms',
+                'rsa_totside',
+                'avg_cx',
+                'res_bfactor_n',
+                'closeness',
+                'max_cx',
+                'surface_residue_rsa',
+                'avg_polarity',
+                'highly_conserved_surface_struc_neighbourhood',
+                'avg_surface_residues',
+                'degree',
+                'E_wop_psiblast',
+                'K_wop_psiblast',
+                'avg_dpx'
+                ]
+
 features_generic = [f for f in features_generic if f not in features_ff]
 
 combined_features = features_ff + features_generic
+
+def get_feature_importance(model, test_x):
+    plt.figure(figsize=(25, 100))
+    sorted_idx = model.feature_importances_.argsort()
+    plt.barh(test_x.columns[sorted_idx], model.feature_importances_[sorted_idx])
+    plt.title('xgb built-in feature importance')
+    plt.savefig('xgb_builtin_feature_importance')
+    explainer = shap.TreeExplainer(model)
+    shap_values = explainer.shap_values(test_x)
+    shap.summary_plot(shap_values, test_x, plot_type="bar", max_display=40, plot_size=(20,20), show=False)
+    fig = plt.gcf()
+    fig.savefig('shap_feature_importance_bar')
+    plt.cla()
+    plt.clf()
+    shap.summary_plot(shap_values, test_x, max_display=40, plot_size=(20,20), show=False)
+    fig = plt.gcf()
+    fig.savefig('shap_feature_importance_scatter')
 
 def domain_train_test_split(df, split_by_domain=True, train_prop = 0.7):
 
@@ -41,8 +78,14 @@ def domain_train_test_split(df, split_by_domain=True, train_prop = 0.7):
         test = df.iloc[last_train_idx:]
     return train, test
 
-def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, validation=None,
-                     use_ff=True, use_geometricus=False, use_generic=True, drop_features=None, add_features=None):
+def add_seq_embed(train, test):
+    seq_train = pd.read_csv('../datasets/PPI/ppi_sequence_embeddings_train.csv')
+    seq_test = pd.read_csv('../datasets/PPI/ppi_sequence_embeddings_validation.csv')
+    return pd.concat([train, seq_train], axis=1), pd.concat([test, seq_test], axis=1)
+    pass
+
+def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, validation=None, use_ff=True,
+                     use_geometricus=False, use_generic=True, drop_features=None, use_seq_em=False, add_features=None):
     """
     Note that this version of the function assumes alphafold features have been
     pre-computed and exist in the dataframe as columns labeled 0-383
@@ -60,6 +103,9 @@ def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, valida
         features = [f for f in features if f not in drop_features]
     if add_features is not None:
         features += add_features
+    if use_seq_em:
+        features += [f'e{i}' for i in range(1024)]
+        train, test = add_seq_embed(train, test)
     train_x = train[features]
     test_x = test[features]
     if validation is not None:
@@ -110,6 +156,7 @@ def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, valida
     for k, v in scores.items():
         print(f'{k}: {v}')
     scores['probas'] = probas
+    get_feature_importance(model, test_x)
     features_kept = [c for c in train_x.columns if c not in [str(i) for i in range(384)]]
     scores['features'] = ', '.join(features_kept)
     return scores
@@ -145,7 +192,8 @@ def get_scores(test_y, probas, preds, train_y, train_probas):
         'accuracy': accuracy_score(test_y, preds),
         'ROC AUC': roc_auc_score(test_y, probas),
         'PR AUC': auc(recall, precision),
-        'MCC': matthews_corrcoef(test_y, preds)
+        'MCC': matthews_corrcoef(test_y, preds),
+        'f1': f1_score(test_y, preds)
     }
 
 
@@ -163,14 +211,15 @@ def main():
     # train = drop_inconsistent_rows(train)
     # test = drop_inconsistent_rows(test)
     prediction_columns =[]
-    for use_geometricus in [True]:
-        for use_alphafold in [True]:
-            for use_ff in [True]:
-                for use_generic in [True, False]:
-                    if use_ff == use_geometricus == use_alphafold == False:
+    for use_geometricus in [False]:
+        for use_alphafold in [False]:
+            for use_ff in [False]:
+                for use_seq_em in [True, False]:
+                    if use_ff == use_geometricus == use_alphafold == use_seq_em == False:
                         continue
-                    print(f'--- USE ALPHAFOLD: {use_alphafold}, USE GEOMET: {use_geometricus}, USE FF: {use_ff}, USE GENERIC {use_generic}---')
-                    eval_dict = fit_and_evaluate(train, test, target=target, use_alphafold=use_alphafold, use_ff=use_ff, use_geometricus=use_geometricus, use_generic=use_generic)
+                    print(f'---USE ALPHAFOLD: {use_alphafold}, USE GEOMET: {use_geometricus}, USE FF: {use_ff}, USE SEQ EM: {use_seq_em}---')
+                    eval_dict = fit_and_evaluate(train, test, target=target, use_alphafold=use_alphafold, use_ff=use_ff,
+                                                 use_geometricus=use_geometricus, use_generic=True, use_seq_em=use_seq_em)
                     predicted_probs = eval_dict['probas']
                     pred_colname = 'af_' + str(use_alphafold) + '_pred'
                     prediction_columns.append(pred_colname)
