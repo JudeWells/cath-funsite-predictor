@@ -124,7 +124,7 @@ def add_geometricus_features(train, test, geo_train_path, geo_test_path):
 def main():
     # target = 'annotation_IBIS_PPI_INTERCHAIN'
     target = 'PPI_interface_true'
-    train = pd.read_csv('annotated_processed_training_with_alphafold_v2.csv')
+    train = pd.read_csv('annotated_processed_training_with_alphafold.csv')
     test = pd.read_csv('annotated_processed_validation_with_alphafold.csv')
     geometricus_train_path = '../datasets/PPI/geometricus_PPI_training_dataset.csv'
     geometricus_test_path = '../datasets/PPI/geometricus_PPI_validation_dataset.csv'
