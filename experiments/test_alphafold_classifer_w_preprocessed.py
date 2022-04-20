@@ -204,9 +204,9 @@ def main():
     # test = drop_inconsistent_rows(test)
     prediction_columns =[]
     for use_geometricus in [False]:
-        for use_alphafold in [False]:
-            for use_ff in [False]:
-                for use_seq_em in [True, False]:
+        for use_alphafold in [True]:
+            for use_ff in [True]:
+                for use_seq_em in [False]:
                     if use_ff == use_geometricus == use_alphafold == use_seq_em == False:
                         continue
                     print(f'---USE ALPHAFOLD: {use_alphafold}, USE GEOMET: {use_geometricus}, USE FF: {use_ff}, USE SEQ EM: {use_seq_em}---')
