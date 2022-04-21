@@ -84,6 +84,20 @@ def add_seq_embed(train, test):
     train = pd.concat([train, seq_train], axis=1)
     test = pd.concat([test, seq_test], axis=1)
     return train, test
+
+def get_transormer_index_map():
+    train_path = '../../protein_transformer/data/apr_20/train_embed.npy'
+    test_path = '../../protein_transformer/data/apr_20/test_embed.npy'
+
+
+def add_transformer_embed(train, test, n_features=400):
+    for df in [train, test]:
+        new_features = pd.DataFrame(np.zeros(shape=[len(df), n_features]), columns=['t'+str(i) for i in range(400)], index=df.index)
+        df = df.join(new_features)
+
+
+    train_path = '../../protein_transformer/data/apr_20/train_embed.npy'
+    test_path = '../../protein_transformer/data/apr_20/test_embed.npy'
     pass
 
 def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, validation=None, use_ff=True,
