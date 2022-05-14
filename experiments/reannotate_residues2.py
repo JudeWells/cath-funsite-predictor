@@ -10,7 +10,7 @@ The output is saved with the suffix annotated_
 true_path = '../datasets/PPI/PPI_training_w_sequences.csv'
 true_ann = pd.read_csv(true_path)
 
-train_path = 'annotated_processed_training_with_alphafold_v2.csv'
+train_path = 'annotated_processed_training_with_alphafold.csv'
 # test_path = 'val_c3_with_alphafold.csv'
 
 train = pd.read_csv(train_path)

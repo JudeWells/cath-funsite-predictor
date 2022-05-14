@@ -363,7 +363,7 @@ def calculate_proportion_of_domains_downloaded(alpha_dir, df):
 
 
 if __name__=="__main__":
-    path_df_w_features = 'annotated_processed_training_with_alphafold_v2.csv' # this is the path where that dataset with all features will be saved
+    path_df_w_features = 'annotated_processed_training_with_alphafold.csv'  # this is the path where that dataset with all features will be saved
     seq_df = pd.read_csv('../datasets/PPI/PPI_training_w_sequences.csv')
     dir = '../alpha_pickles/c3_combined/'
     pdb_file_dir = 'pdbs/'
