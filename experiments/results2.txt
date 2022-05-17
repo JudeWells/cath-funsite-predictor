@@ -1,0 +1,426 @@
+/home/jwells/Documents/cath-funsite-predictor/venv/bin/python /home/jwells/Documents/cath-funsite-predictor/experiments/v2test_alphafold_classifer_w_preprocessed.py
+IPython could not be loaded!
+n rows with missing alphafold train 9
+---USE ALPHAFOLD: True, USE GEOMET: True, USE_FEATURES: [],USE FF: False, USE SEQ EM: True, USE GENERIC False---
+The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+[00:22:49] WARNING: ../src/learner.cc:576:
+Parameters: { "njobs", "reg_apha" } might not be used.
+
+  This could be a false alarm, with some parameters getting used by language bindings but
+  then being mistakenly passed down to XGBoost core, or some parameter actually being used
+  but getting flagged wrongly here. Please open an issue if you find any such cases.
+
+
+Training time 2327.7316570281982
+DF shape: (159822, 1416)
+Test shape (40140, 1416)
+train_pr_auc: 0.9538879800116943
+accuracy: 0.7009965122072745
+ROC AUC: 0.8326111835213678
+PR AUC: 0.7805945505191366
+MCC: 0.45877765386680663
+f1: 0.7034932555956321
+ntree_limit is deprecated, use `iteration_range` or model slicing instead.
+---USE ALPHAFOLD: True, USE GEOMET: True, USE_FEATURES: ['scons', 'rsa_allatoms', 'rsa_totside', 'avg_cx', 'res_bfactor_n', 'closeness', 'max_cx', 'surface_residue_rsa', 'avg_polarity', 'highly_conserved_surface_struc_neighbourhood', 'avg_surface_residues', 'degree', 'E_wop_psiblast', 'K_wop_psiblast', 'avg_dpx'],USE FF: False, USE SEQ EM: True, USE GENERIC False---
+The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+[01:04:11] WARNING: ../src/learner.cc:576:
+Parameters: { "njobs", "reg_apha" } might not be used.
+
+  This could be a false alarm, with some parameters getting used by language bindings but
+  then being mistakenly passed down to XGBoost core, or some parameter actually being used
+  but getting flagged wrongly here. Please open an issue if you find any such cases.
+
+
+Training time 2284.940511226654
+DF shape: (159822, 1431)
+Test shape (40140, 1431)
+train_pr_auc: 0.9694006626945526
+accuracy: 0.7422521175884405
+ROC AUC: 0.8771595021601509
+PR AUC: 0.8481724897489593
+MCC: 0.525264096378717
+f1: 0.7356668369954011
+ntree_limit is deprecated, use `iteration_range` or model slicing instead.
+---USE ALPHAFOLD: True, USE GEOMET: True, USE_FEATURES: ['scons', 'rsa_allatoms', 'rsa_totside', 'res_bfactor_n', 'closeness', 'surface_residue_rsa', 'avg_polarity', 'highly_conserved_surface_struc_neighbourhood', 'avg_surface_residues', 'degree', 'E_wop_psiblast', 'K_wop_psiblast'],USE FF: False, USE SEQ EM: True, USE GENERIC False---
+The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+[01:44:44] WARNING: ../src/learner.cc:576:
+Parameters: { "njobs", "reg_apha" } might not be used.
+
+  This could be a false alarm, with some parameters getting used by language bindings but
+  then being mistakenly passed down to XGBoost core, or some parameter actually being used
+  but getting flagged wrongly here. Please open an issue if you find any such cases.
+
+
+Training time 2288.5697679519653
+DF shape: (159822, 1428)
+Test shape (40140, 1428)
+train_pr_auc: 0.968716771832703
+accuracy: 0.740333831589437
+ROC AUC: 0.876498232727358
+PR AUC: 0.8469108211175331
+MCC: 0.5234089950505353
+f1: 0.734749968189337
+ntree_limit is deprecated, use `iteration_range` or model slicing instead.
+---USE ALPHAFOLD: True, USE GEOMET: True, USE_FEATURES: [],USE FF: False, USE SEQ EM: False, USE GENERIC False---
+The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+[02:24:51] WARNING: ../src/learner.cc:576:
+Parameters: { "njobs", "reg_apha" } might not be used.
+
+  This could be a false alarm, with some parameters getting used by language bindings but
+  then being mistakenly passed down to XGBoost core, or some parameter actually being used
+  but getting flagged wrongly here. Please open an issue if you find any such cases.
+
+
+Training time 568.5799150466919
+DF shape: (159822, 392)
+Test shape (40140, 392)
+train_pr_auc: 0.9024305400809837
+accuracy: 0.6277279521674141
+ROC AUC: 0.8034775799401664
+PR AUC: 0.7342953114243052
+MCC: 0.3747631767107488
+f1: 0.6659363752207641
+ntree_limit is deprecated, use `iteration_range` or model slicing instead.
+---USE ALPHAFOLD: True, USE GEOMET: True, USE_FEATURES: ['scons', 'rsa_allatoms', 'rsa_totside', 'avg_cx', 'res_bfactor_n', 'closeness', 'max_cx', 'surface_residue_rsa', 'avg_polarity', 'highly_conserved_surface_struc_neighbourhood', 'avg_surface_residues', 'degree', 'E_wop_psiblast', 'K_wop_psiblast', 'avg_dpx'],USE FF: False, USE SEQ EM: False, USE GENERIC False---
+The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+[02:36:11] WARNING: ../src/learner.cc:576:
+Parameters: { "njobs", "reg_apha" } might not be used.
+
+  This could be a false alarm, with some parameters getting used by language bindings but
+  then being mistakenly passed down to XGBoost core, or some parameter actually being used
+  but getting flagged wrongly here. Please open an issue if you find any such cases.
+
+
+Training time 585.9662232398987
+DF shape: (159822, 407)
+Test shape (40140, 407)
+train_pr_auc: 0.9339665520955969
+accuracy: 0.7081714000996512
+ROC AUC: 0.8640990202304772
+PR AUC: 0.8301739917554605
+MCC: 0.48558552907628016
+f1: 0.715982930850548
+ntree_limit is deprecated, use `iteration_range` or model slicing instead.
+---USE ALPHAFOLD: True, USE GEOMET: True, USE_FEATURES: ['scons', 'rsa_allatoms', 'rsa_totside', 'res_bfactor_n', 'closeness', 'surface_residue_rsa', 'avg_polarity', 'highly_conserved_surface_struc_neighbourhood', 'avg_surface_residues', 'degree', 'E_wop_psiblast', 'K_wop_psiblast'],USE FF: False, USE SEQ EM: False, USE GENERIC False---
+The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+[02:47:38] WARNING: ../src/learner.cc:576:
+Parameters: { "njobs", "reg_apha" } might not be used.
+
+  This could be a false alarm, with some parameters getting used by language bindings but
+  then being mistakenly passed down to XGBoost core, or some parameter actually being used
+  but getting flagged wrongly here. Please open an issue if you find any such cases.
+
+
+Training time 583.5421507358551
+DF shape: (159822, 404)
+Test shape (40140, 404)
+train_pr_auc: 0.9331309319984389
+accuracy: 0.705107125062282
+ROC AUC: 0.8636760100458457
+PR AUC: 0.8295967074849371
+MCC: 0.4807830297793471
+f1: 0.7137017777240294
+ntree_limit is deprecated, use `iteration_range` or model slicing instead.
+---USE ALPHAFOLD: False, USE GEOMET: True, USE_FEATURES: [],USE FF: False, USE SEQ EM: True, USE GENERIC False---
+The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+[02:59:33] WARNING: ../src/learner.cc:576:
+Parameters: { "njobs", "reg_apha" } might not be used.
+
+  This could be a false alarm, with some parameters getting used by language bindings but
+  then being mistakenly passed down to XGBoost core, or some parameter actually being used
+  but getting flagged wrongly here. Please open an issue if you find any such cases.
+
+
+Training time 598.1811816692352
+DF shape: (159822, 1032)
+Test shape (40140, 1032)
+train_pr_auc: 0.9461656556816183
+accuracy: 0.6958644743398107
+ROC AUC: 0.8246807762194153
+PR AUC: 0.7699506012730397
+MCC: 0.4485352330336535
+f1: 0.6986274316184456
+ntree_limit is deprecated, use `iteration_range` or model slicing instead.
+---USE ALPHAFOLD: False, USE GEOMET: True, USE_FEATURES: ['scons', 'rsa_allatoms', 'rsa_totside', 'avg_cx', 'res_bfactor_n', 'closeness', 'max_cx', 'surface_residue_rsa', 'avg_polarity', 'highly_conserved_surface_struc_neighbourhood', 'avg_surface_residues', 'degree', 'E_wop_psiblast', 'K_wop_psiblast', 'avg_dpx'],USE FF: False, USE SEQ EM: True, USE GENERIC False---
+The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+[03:12:04] WARNING: ../src/learner.cc:576:
+Parameters: { "njobs", "reg_apha" } might not be used.
+
+  This could be a false alarm, with some parameters getting used by language bindings but
+  then being mistakenly passed down to XGBoost core, or some parameter actually being used
+  but getting flagged wrongly here. Please open an issue if you find any such cases.
+
+
+Training time 588.9747378826141
+DF shape: (159822, 1047)
+Test shape (40140, 1047)
+train_pr_auc: 0.9654481146718582
+accuracy: 0.7387892376681614
+ROC AUC: 0.8736344593383121
+PR AUC: 0.843520016542372
+MCC: 0.519120180871598
+f1: 0.7326141840716089
+ntree_limit is deprecated, use `iteration_range` or model slicing instead.
+---USE ALPHAFOLD: False, USE GEOMET: True, USE_FEATURES: ['scons', 'rsa_allatoms', 'rsa_totside', 'res_bfactor_n', 'closeness', 'surface_residue_rsa', 'avg_polarity', 'highly_conserved_surface_struc_neighbourhood', 'avg_surface_residues', 'degree', 'E_wop_psiblast', 'K_wop_psiblast'],USE FF: False, USE SEQ EM: True, USE GENERIC False---
+The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+[03:24:20] WARNING: ../src/learner.cc:576:
+Parameters: { "njobs", "reg_apha" } might not be used.
+
+  This could be a false alarm, with some parameters getting used by language bindings but
+  then being mistakenly passed down to XGBoost core, or some parameter actually being used
+  but getting flagged wrongly here. Please open an issue if you find any such cases.
+
+
+Training time 595.8027815818787
+DF shape: (159822, 1044)
+Test shape (40140, 1044)
+train_pr_auc: 0.9653860649401615
+accuracy: 0.7377179870453413
+ROC AUC: 0.8729561995233497
+PR AUC: 0.8425108776915051
+MCC: 0.5181179632264531
+f1: 0.732125591572948
+ntree_limit is deprecated, use `iteration_range` or model slicing instead.
+---USE ALPHAFOLD: False, USE GEOMET: True, USE_FEATURES: [],USE FF: False, USE SEQ EM: False, USE GENERIC False---
+The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+[03:36:11] WARNING: ../src/learner.cc:576:
+Parameters: { "njobs", "reg_apha" } might not be used.
+
+  This could be a false alarm, with some parameters getting used by language bindings but
+  then being mistakenly passed down to XGBoost core, or some parameter actually being used
+  but getting flagged wrongly here. Please open an issue if you find any such cases.
+
+
+Training time 23.330430030822754
+DF shape: (159822, 8)
+Test shape (40140, 8)
+train_pr_auc: 0.6526275994723527
+accuracy: 0.5409566517189835
+ROC AUC: 0.6960775691437626
+PR AUC: 0.5872661497041438
+MCC: 0.2687981613659259
+f1: 0.6254268986827126
+ntree_limit is deprecated, use `iteration_range` or model slicing instead.
+---USE ALPHAFOLD: False, USE GEOMET: True, USE_FEATURES: ['scons', 'rsa_allatoms', 'rsa_totside', 'avg_cx', 'res_bfactor_n', 'closeness', 'max_cx', 'surface_residue_rsa', 'avg_polarity', 'highly_conserved_surface_struc_neighbourhood', 'avg_surface_residues', 'degree', 'E_wop_psiblast', 'K_wop_psiblast', 'avg_dpx'],USE FF: False, USE SEQ EM: False, USE GENERIC False---
+The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+[03:37:11] WARNING: ../src/learner.cc:576:
+Parameters: { "njobs", "reg_apha" } might not be used.
+
+  This could be a false alarm, with some parameters getting used by language bindings but
+  then being mistakenly passed down to XGBoost core, or some parameter actually being used
+  but getting flagged wrongly here. Please open an issue if you find any such cases.
+
+
+Training time 35.691258668899536
+DF shape: (159822, 23)
+Test shape (40140, 23)
+train_pr_auc: 0.863543012206255
+accuracy: 0.6737419033383159
+ROC AUC: 0.840795833825963
+PR AUC: 0.8045355302568369
+MCC: 0.4337818873775184
+f1: 0.6918878223226049
+ntree_limit is deprecated, use `iteration_range` or model slicing instead.
+---USE ALPHAFOLD: False, USE GEOMET: True, USE_FEATURES: ['scons', 'rsa_allatoms', 'rsa_totside', 'res_bfactor_n', 'closeness', 'surface_residue_rsa', 'avg_polarity', 'highly_conserved_surface_struc_neighbourhood', 'avg_surface_residues', 'degree', 'E_wop_psiblast', 'K_wop_psiblast'],USE FF: False, USE SEQ EM: False, USE GENERIC False---
+The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+[03:38:39] WARNING: ../src/learner.cc:576:
+Parameters: { "njobs", "reg_apha" } might not be used.
+
+  This could be a false alarm, with some parameters getting used by language bindings but
+  then being mistakenly passed down to XGBoost core, or some parameter actually being used
+  but getting flagged wrongly here. Please open an issue if you find any such cases.
+
+
+Training time 35.77481746673584
+DF shape: (159822, 20)
+Test shape (40140, 20)
+train_pr_auc: 0.8598503011046419
+accuracy: 0.6711260587942203
+ROC AUC: 0.8399123429638924
+PR AUC: 0.8032821641336749
+MCC: 0.43230147747206676
+f1: 0.6911252018063129
+ntree_limit is deprecated, use `iteration_range` or model slicing instead.
+---USE ALPHAFOLD: True, USE GEOMET: False, USE_FEATURES: [],USE FF: False, USE SEQ EM: True, USE GENERIC False---
+The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+[03:40:37] WARNING: ../src/learner.cc:576:
+Parameters: { "njobs", "reg_apha" } might not be used.
+
+  This could be a false alarm, with some parameters getting used by language bindings but
+  then being mistakenly passed down to XGBoost core, or some parameter actually being used
+  but getting flagged wrongly here. Please open an issue if you find any such cases.
+
+
+Training time 2273.3955705165863
+DF shape: (159822, 1408)
+Test shape (40140, 1408)
+train_pr_auc: 0.9525514692701725
+accuracy: 0.6604384653712008
+ROC AUC: 0.8044514291533528
+PR AUC: 0.7484993409633507
+MCC: 0.40012488926963485
+f1: 0.6769529768676527
+ntree_limit is deprecated, use `iteration_range` or model slicing instead.
+---USE ALPHAFOLD: True, USE GEOMET: False, USE_FEATURES: ['scons', 'rsa_allatoms', 'rsa_totside', 'avg_cx', 'res_bfactor_n', 'closeness', 'max_cx', 'surface_residue_rsa', 'avg_polarity', 'highly_conserved_surface_struc_neighbourhood', 'avg_surface_residues', 'degree', 'E_wop_psiblast', 'K_wop_psiblast', 'avg_dpx'],USE FF: False, USE SEQ EM: True, USE GENERIC False---
+The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+[04:21:06] WARNING: ../src/learner.cc:576:
+Parameters: { "njobs", "reg_apha" } might not be used.
+
+  This could be a false alarm, with some parameters getting used by language bindings but
+  then being mistakenly passed down to XGBoost core, or some parameter actually being used
+  but getting flagged wrongly here. Please open an issue if you find any such cases.
+
+
+Training time 2263.199693441391
+DF shape: (159822, 1423)
+Test shape (40140, 1423)
+train_pr_auc: 0.9688000665844727
+accuracy: 0.7292725460886896
+ROC AUC: 0.8691444879297309
+PR AUC: 0.8384221063724602
+MCC: 0.5070036647621303
+f1: 0.7266644867570491
+ntree_limit is deprecated, use `iteration_range` or model slicing instead.
+---USE ALPHAFOLD: True, USE GEOMET: False, USE_FEATURES: ['scons', 'rsa_allatoms', 'rsa_totside', 'res_bfactor_n', 'closeness', 'surface_residue_rsa', 'avg_polarity', 'highly_conserved_surface_struc_neighbourhood', 'avg_surface_residues', 'degree', 'E_wop_psiblast', 'K_wop_psiblast'],USE FF: False, USE SEQ EM: True, USE GENERIC False---
+The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+[05:01:17] WARNING: ../src/learner.cc:576:
+Parameters: { "njobs", "reg_apha" } might not be used.
+
+  This could be a false alarm, with some parameters getting used by language bindings but
+  then being mistakenly passed down to XGBoost core, or some parameter actually being used
+  but getting flagged wrongly here. Please open an issue if you find any such cases.
+
+
+Training time 2262.692408323288
+DF shape: (159822, 1420)
+Test shape (40140, 1420)
+train_pr_auc: 0.968651369598624
+accuracy: 0.7287992027902341
+ROC AUC: 0.8680680077460181
+PR AUC: 0.8371682150519748
+MCC: 0.507919762417051
+f1: 0.727099523690148
+ntree_limit is deprecated, use `iteration_range` or model slicing instead.
+---USE ALPHAFOLD: True, USE GEOMET: False, USE_FEATURES: [],USE FF: False, USE SEQ EM: False, USE GENERIC False---
+The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+[05:40:59] WARNING: ../src/learner.cc:576:
+Parameters: { "njobs", "reg_apha" } might not be used.
+
+  This could be a false alarm, with some parameters getting used by language bindings but
+  then being mistakenly passed down to XGBoost core, or some parameter actually being used
+  but getting flagged wrongly here. Please open an issue if you find any such cases.
+
+
+Training time 553.7263472080231
+DF shape: (159822, 384)
+Test shape (40140, 384)
+train_pr_auc: 0.8985889945993883
+accuracy: 0.5760338814150473
+ROC AUC: 0.7661732386273289
+PR AUC: 0.6869898832371506
+MCC: 0.30302252414953385
+f1: 0.6378532516172966
+ntree_limit is deprecated, use `iteration_range` or model slicing instead.
+---USE ALPHAFOLD: True, USE GEOMET: False, USE_FEATURES: ['scons', 'rsa_allatoms', 'rsa_totside', 'avg_cx', 'res_bfactor_n', 'closeness', 'max_cx', 'surface_residue_rsa', 'avg_polarity', 'highly_conserved_surface_struc_neighbourhood', 'avg_surface_residues', 'degree', 'E_wop_psiblast', 'K_wop_psiblast', 'avg_dpx'],USE FF: False, USE SEQ EM: False, USE GENERIC False---
+The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+[05:52:05] WARNING: ../src/learner.cc:576:
+Parameters: { "njobs", "reg_apha" } might not be used.
+
+  This could be a false alarm, with some parameters getting used by language bindings but
+  then being mistakenly passed down to XGBoost core, or some parameter actually being used
+  but getting flagged wrongly here. Please open an issue if you find any such cases.
+
+
+Training time 574.9287114143372
+DF shape: (159822, 399)
+Test shape (40140, 399)
+train_pr_auc: 0.9289454626563166
+accuracy: 0.6960388639760837
+ROC AUC: 0.8553608482731556
+PR AUC: 0.8181080967974568
+MCC: 0.46748907763311315
+f1: 0.7074030552291423
+ntree_limit is deprecated, use `iteration_range` or model slicing instead.
+---USE ALPHAFOLD: True, USE GEOMET: False, USE_FEATURES: ['scons', 'rsa_allatoms', 'rsa_totside', 'res_bfactor_n', 'closeness', 'surface_residue_rsa', 'avg_polarity', 'highly_conserved_surface_struc_neighbourhood', 'avg_surface_residues', 'degree', 'E_wop_psiblast', 'K_wop_psiblast'],USE FF: False, USE SEQ EM: False, USE GENERIC False---
+The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+[06:03:21] WARNING: ../src/learner.cc:576:
+Parameters: { "njobs", "reg_apha" } might not be used.
+
+  This could be a false alarm, with some parameters getting used by language bindings but
+  then being mistakenly passed down to XGBoost core, or some parameter actually being used
+  but getting flagged wrongly here. Please open an issue if you find any such cases.
+
+
+Training time 569.3592793941498
+DF shape: (159822, 396)
+Test shape (40140, 396)
+train_pr_auc: 0.9279626657337218
+accuracy: 0.6917538614848032
+ROC AUC: 0.8543976059808782
+PR AUC: 0.8170141560483155
+MCC: 0.462345389509472
+f1: 0.7049340614790262
+ntree_limit is deprecated, use `iteration_range` or model slicing instead.
+---USE ALPHAFOLD: False, USE GEOMET: False, USE_FEATURES: [],USE FF: False, USE SEQ EM: True, USE GENERIC False---
+The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+[06:15:00] WARNING: ../src/learner.cc:576:
+Parameters: { "njobs", "reg_apha" } might not be used.
+
+  This could be a false alarm, with some parameters getting used by language bindings but
+  then being mistakenly passed down to XGBoost core, or some parameter actually being used
+  but getting flagged wrongly here. Please open an issue if you find any such cases.
+
+
+Training time 591.9945020675659
+DF shape: (159822, 1024)
+Test shape (40140, 1024)
+train_pr_auc: 0.9443228199903115
+accuracy: 0.6356502242152466
+ROC AUC: 0.7750734634827243
+PR AUC: 0.7129914608648289
+MCC: 0.35976340845577637
+f1: 0.6595749633388422
+ntree_limit is deprecated, use `iteration_range` or model slicing instead.
+---USE ALPHAFOLD: False, USE GEOMET: False, USE_FEATURES: ['scons', 'rsa_allatoms', 'rsa_totside', 'avg_cx', 'res_bfactor_n', 'closeness', 'max_cx', 'surface_residue_rsa', 'avg_polarity', 'highly_conserved_surface_struc_neighbourhood', 'avg_surface_residues', 'degree', 'E_wop_psiblast', 'K_wop_psiblast', 'avg_dpx'],USE FF: False, USE SEQ EM: True, USE GENERIC False---
+The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+[06:27:24] WARNING: ../src/learner.cc:576:
+Parameters: { "njobs", "reg_apha" } might not be used.
+
+  This could be a false alarm, with some parameters getting used by language bindings but
+  then being mistakenly passed down to XGBoost core, or some parameter actually being used
+  but getting flagged wrongly here. Please open an issue if you find any such cases.
+
+
+Training time 584.6791415214539
+DF shape: (159822, 1039)
+Test shape (40140, 1039)
+train_pr_auc: 0.9641074371345197
+accuracy: 0.727379172894868
+ROC AUC: 0.8645707527399145
+PR AUC: 0.831471318715938
+MCC: 0.5028650082300962
+f1: 0.7246420573211545
+ntree_limit is deprecated, use `iteration_range` or model slicing instead.
+---USE ALPHAFOLD: False, USE GEOMET: False, USE_FEATURES: ['scons', 'rsa_allatoms', 'rsa_totside', 'res_bfactor_n', 'closeness', 'surface_residue_rsa', 'avg_polarity', 'highly_conserved_surface_struc_neighbourhood', 'avg_surface_residues', 'degree', 'E_wop_psiblast', 'K_wop_psiblast'],USE FF: False, USE SEQ EM: True, USE GENERIC False---
+The use of label encoder in XGBClassifier is deprecated and will be removed in a future release. To remove this warning, do the following: 1) Pass option use_label_encoder=False when constructing XGBClassifier object; and 2) Encode your labels (y) as integers starting with 0, i.e. 0, 1, 2, ..., [num_class - 1].
+[06:39:28] WARNING: ../src/learner.cc:576:
+Parameters: { "njobs", "reg_apha" } might not be used.
+
+  This could be a false alarm, with some parameters getting used by language bindings but
+  then being mistakenly passed down to XGBoost core, or some parameter actually being used
+  but getting flagged wrongly here. Please open an issue if you find any such cases.
+
+
+Training time 583.5245661735535
+More than 20 figures have been opened. Figures created through the pyplot interface (`matplotlib.pyplot.figure`) are retained until explicitly closed and may consume too much memory. (To control this warning, see the rcParam `figure.max_open_warning`).
+DF shape: (159822, 1036)
+Test shape (40140, 1036)
+train_pr_auc: 0.9640255073031941
+accuracy: 0.7253861484803189
+ROC AUC: 0.8632413863126172
+PR AUC: 0.8300817218062464
+MCC: 0.5009290503709721
+f1: 0.7236997117433263
+ntree_limit is deprecated, use `iteration_range` or model slicing instead.
+
+Process finished with exit code 0

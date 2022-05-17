@@ -163,7 +163,7 @@ def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, valida
     del test
     model = xgb.XGBClassifier(
         tree_method='gpu_hist',
-        gpu_id=1,
+        gpu_id=0,
         n_estimators=2000,
         learning_rate=0.01,
         # subsample=0.7,
@@ -254,8 +254,8 @@ def get_scores(test_y, probas, preds, train_y, train_probas):
 
 
 def main():
-    # target = 'annotation_IBIS_PPI_INTERCHAIN'
-    target = 'PPI_interface_true'
+    target = 'annotation_IBIS_PPI_INTERCHAIN'
+    # target = 'PPI_interface_true'
     train = pd.read_csv('annotated_processed_training_with_alphafold.csv')
     test = pd.read_csv('annotated_processed_validation_with_alphafold.csv')
     print('n rows with missing alphafold train', sum(train['383'] == 0) + train['383'].isnull().sum())
