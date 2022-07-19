@@ -3,7 +3,7 @@ import time
 import pandas as pd
 import xgboost as xgb
 import numpy as np
-from sklearn.metrics import accuracy_score, roc_auc_score, precision_recall_curve, auc, matthews_corrcoef, f1_score
+from sklearn.metrics import accuracy_score, roc_auc_score, precision_recall_curve, auc, matthews_corrcoef, f1_score, precision_score, recall_score
 import matplotlib.pyplot as plt
 import shap
 
@@ -55,6 +55,19 @@ features_15_minus_psaia = [
                 'surface_residue_rsa',
                 'avg_polarity',
                 'highly_conserved_surface_struc_neighbourhood',
+                'avg_surface_residues',
+                'degree',
+                'E_wop_psiblast',
+                'K_wop_psiblast',
+                ]
+
+features_15_minus_psaia_minus2 = [
+                'scons',
+                'rsa_allatoms',
+                'rsa_totside',
+                'res_bfactor_n',
+                'closeness',
+                'avg_polarity',
                 'avg_surface_residues',
                 'degree',
                 'E_wop_psiblast',
@@ -162,9 +175,9 @@ def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, valida
     del train
     del test
     model = xgb.XGBClassifier(
-        tree_method='gpu_hist',
-        gpu_id=1,
-        n_estimators=2000,
+        # tree_method='gpu_hist',
+        # gpu_id=1,
+        n_estimators=1000,
         learning_rate=0.01,
         # subsample=0.7,
         subsample=0.8,
@@ -192,10 +205,8 @@ def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, valida
         model.fit(train_x, train_y, eval_metric=loss)
     train_time = time.time() - start
     print(f'Training time {train_time}')
-    train_probas = model.predict_proba(train_x)[:,1]
     probas = model.predict_proba(test_x)[:,1]
-    preds = [1 if p >= 0.5 else 0 for p in probas]
-    scores = get_scores(test_y, probas, preds, train_y, train_probas)
+    scores = get_scores(test_y, probas, threshold=0.5)
 
     print(f'DF shape: {train_x.shape}')
     print(f'Test shape {test_x.shape}')
@@ -203,7 +214,7 @@ def fit_and_evaluate(train, test, target='res_label', use_alphafold=True, valida
         print(f'{k}: {v}')
     scores['probas'] = probas
     param_str = f'ALPHAFOLD: {use_alphafold}, GEOMET: {use_geometricus}, FF: {use_ff}, SEQ EM: {use_seq_em}, GENERIC {use_generic}'
-    get_feature_importance(model, test_x, param_str=param_str)
+    # get_feature_importance(model, test_x, param_str=param_str)
     features_kept = [c for c in train_x.columns if c not in [str(i) for i in range(384)]]
     scores['features'] = ', '.join(features_kept)
     return scores
@@ -239,17 +250,17 @@ def apply_log_transform_to_geometricus(train, test):
             df[col] = np.log(df[col], where=df[col]>0, out=np.ones(len(df))*-1)
     return train, test
 
-def get_scores(test_y, probas, preds, train_y, train_probas):
-    precision, recall, thresholds = precision_recall_curve(test_y, probas)
-    train_precision, train_recall, train_thresholds = precision_recall_curve(train_y, train_probas)
-
+def get_scores(y_true, y_pred, threshold=0.5):
+    binarized_pred = y_pred >= threshold
+    precision, recall, thresholds = precision_recall_curve(y_true, y_pred)
     return {
-        'train_pr_auc': auc(train_recall, train_precision),
-        'accuracy': accuracy_score(test_y, preds),
-        'ROC AUC': roc_auc_score(test_y, probas),
-        'PR AUC': auc(recall, precision),
-        'MCC': matthews_corrcoef(test_y, preds),
-        'f1': f1_score(test_y, preds)
+        'roc_auc': roc_auc_score(y_true, y_pred),
+        'accuracy': accuracy_score(y_true, binarized_pred),
+        'precision': precision_score(y_true, binarized_pred),
+        'recall': recall_score(y_true, binarized_pred),
+        'MCC': matthews_corrcoef(y_true, binarized_pred),
+        'f1': f1_score(y_true, binarized_pred),
+        'PRAUC':auc(recall, precision)
     }
 
 
@@ -268,12 +279,14 @@ def main():
     # train = drop_inconsistent_rows(train)
     # test = drop_inconsistent_rows(test)
     results_rows = []
-    for use_geometricus in [False, True]:
-        for use_alphafold in [False, True]:
-            for use_ff in [True]:
-                for use_seq_em in [False, True]:
+    prediction_columns = []
+    for use_geometricus in [True]:
+        for use_alphafold in [True]:
+            for use_ff in [False]:
+                for use_seq_em in [True]:
                     for use_generic in [False]:
-                        for add_features in [[], features_15, features_15_minus_psaia]:
+                        # for add_features in [[], features_15, features_15_minus_psaia]:
+                        for add_features in [features_15_minus_psaia, features_15_minus_psaia_minus2]:
                             if use_ff and len(add_features) > 0:
                                 continue
                             if use_ff == use_geometricus == use_alphafold == use_seq_em == False and len(add_features)==0:
@@ -294,12 +307,11 @@ def main():
                             results_df = pd.DataFrame(results_rows)
                             results_df.drop('probas', axis=1, inplace=True)
                             results_df.to_csv('eval_results_' + target + '.csv', index=False)
-                            # predicted_probs = eval_dict['probas']
-                            # pred_colname = 'af_' + str(use_alphafold) + '_pred'
-                            # prediction_columns.append(pred_colname)
-                            # test[pred_colname] = predicted_probs
-    # test[['domain', 'domain_residue', 'res_label',  target]+prediction_columns].to_csv('classifier_results_on_validation.csv', index=False)
-
+                            predicted_probs = eval_dict['probas']
+                            pred_colname = 'af_' + str(use_alphafold) + '_predictions'
+                            prediction_columns.append(pred_colname)
+                            test[pred_colname] = predicted_probs
+    test[['domain', 'domain_residue', 'res_label',  target]+prediction_columns].to_csv('classifier_results_on_validation.csv', index=False)
 
 if __name__=='__main__':
     main()

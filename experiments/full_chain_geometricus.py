@@ -29,7 +29,7 @@ def create_invariants_array(invariants, sequences):
 if __name__ == '__main__':
     max_residues = 250
     basedir = '../datasets/PPI/'
-    filename = 'PPI_validation_dataset.csv'
+    filename = 'PPI_training_dataset.csv'
     invariants_path = basedir + 'all_invariants_' + filename.split('.csv')[0] + '.pickle'
     sequence_path = basedir + 'all_sequences_' + filename.split('.csv')[0] + '.pickle'
     feature_array_output_path = basedir + 'geo_feature_array_' + filename.split('.csv')[0] + '.pickle'
